@@ -8,7 +8,11 @@ const Auth = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, senha }),
     });
-    if (!r.ok) throw new Error("Login inválido (" + r.status + ")");
+    if (!r.ok) {
+      let detail = "";
+      try { detail = (await r.json()).detail || ""; } catch { /* corpo não-JSON */ }
+      throw new Error(detail ? `Login falhou (${r.status}): ${detail}` : "Login inválido (" + r.status + ")");
+    }
     const data = await r.json();
     sessionStorage.setItem("erp_token", data.access_token);
     return data;
