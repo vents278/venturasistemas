@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+    .card { border:1px solid #cbd5e1; padding:12px; font-size:.9rem; }
+    .card b { font-size:1.6rem; display:block; }
+    .bar { display:flex; gap:8px; margin:12px 0; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Dashboard operacional</h1><a href="index.html">← Módulos</a></header>
+    <div class="bar"><input id="data" type="date" /><button onclick="carregar()">Atualizar</button></div>
+    <div class="grid" id="grid"></div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const CARDS = [
+      ["presentes", "Presentes"], ["deslocados", "Deslocados"], ["sem_presenca", "Sem presença"],
+      ["faltas", "Faltas"], ["apropriacoes_pendentes", "Apropriações pendentes"],
+      ["emails_pendentes", "E-mails pendentes"], ["he_dia_horas", "HE do dia (h)"],
+      ["pendencias_abertas", "Pendências abertas"], ["tarefas_vencidas", "Tarefas vencidas"],
+      ["tarefas_para_hoje", "Tarefas p/ hoje"], ["taxa_absenteismo_30d", "Absenteísmo 30d (%)"],
+    ];
+    async function api(path) {
+      const t = sessionStorage.getItem("erp_token");
+      const r = await fetch(API_BASE + path, { headers: t ? { Authorization: "Bearer " + t } : {} });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+    async function carregar() {
+      const d = await api("/dashboard/resumo?data=" + data.value);
+      grid.innerHTML = CARDS.map(([k, label]) =>
+        `<a class="card" href="${d[k].link}"><b>${d[k].valor}</b>${label}</a>`).join("");
+    }
+    data.valueAsDate = new Date(); carregar();
+  </script>
+</body>
+</html>

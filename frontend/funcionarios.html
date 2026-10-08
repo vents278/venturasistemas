@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Funcionários — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    table { width:100%; border-collapse:collapse; }
+    th,td { border-bottom:1px solid #e2e8f0; padding:8px; text-align:left; font-size:.9rem; }
+    .filters { display:flex; gap:8px; margin:12px 0; flex-wrap:wrap; }
+    .badge { padding:2px 8px; border-radius:10px; font-size:.75rem; }
+    .on { background:#dcfce7; } .off { background:#fee2e2; }
+    #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); }
+    #modal form { background:#fff; max-width:520px; margin:5vh auto; padding:16px; display:grid; gap:8px; grid-template-columns:1fr 1fr; }
+    #modal form h2 { grid-column:1/-1; }
+    #modal .full { grid-column:1/-1; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Funcionários</h1><a href="index.html">← Início</a></header>
+    <div class="filters">
+      <input id="q" placeholder="nome ou matrícula" />
+      <select id="ativo"><option value="">todos</option><option value="true">ativos</option><option value="false">inativos</option></select>
+      <input id="setor" placeholder="setor" />
+      <button onclick="carregar()">Filtrar</button>
+      <button onclick="abrirModal()">+ Novo</button>
+    </div>
+    <table><thead><tr><th>Matrícula</th><th>Nome</th><th>Setor</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody id="tb"></tbody></table>
+  </main>
+  <div id="modal"><form id="form">
+    <h2 id="mt">Novo funcionário</h2>
+    <input id="f_matricula" placeholder="matrícula *" required />
+    <input id="f_nome" placeholder="nome completo *" required />
+    <input id="f_cpf" placeholder="cpf" />
+    <input id="f_cargo" placeholder="cargo" />
+    <input id="f_area" placeholder="área" />
+    <input id="f_setor" placeholder="setor" />
+    <input id="f_empresa" placeholder="empresa" />
+    <label>Admissão<input id="f_admissao" type="date" required /></label>
+    <label>Desligamento<input id="f_deslig" type="date" /></label>
+    <select id="f_jornada"><option value="">jornada...</option></select>
+    <input id="f_obs" placeholder="observações" class="full" />
+    <button type="submit" class="full">Salvar</button>
+    <button type="button" class="full" onclick="fecharModal()">Cancelar</button>
+  </form></div>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/funcionarios.js"></script>
+</body>
+</html>

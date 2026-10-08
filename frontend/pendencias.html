@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pendências — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    table { width:100%; border-collapse:collapse; } th,td { border-bottom:1px solid #e2e8f0; padding:8px; font-size:.9rem; text-align:left; }
+    .bar { display:flex; gap:8px; margin:12px 0; flex-wrap:wrap; }
+    .ALTA { background:#fee2e2; } .MEDIA { background:#fef9c3; } .BAIXA { background:#dcfce7; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Pendências (automáticas)</h1><a href="index.html">← Início</a></header>
+    <div class="bar">
+      <input id="data" type="date" />
+      <button onclick="sincronizar()">Sincronizar dia</button>
+      <select id="status"><option value="ABERTA">abertas</option><option value="">todas</option><option value="RESOLVIDA">resolvidas</option></select>
+      <button onclick="carregar()">Filtrar</button>
+    </div>
+    <table><thead><tr><th>Tipo</th><th>Data ref</th><th>Descrição</th><th>Prior.</th><th>Ações</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function api(path, opts = {}) {
+      const h = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      const t = sessionStorage.getItem("erp_token");
+      if (t) h.Authorization = "Bearer " + t;
+      const r = await fetch(API_BASE + path, { ...opts, headers: h });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (!r.ok) throw new Error(await r.text());
+      return r.status === 204 ? null : r.json();
+    }
+    data.valueAsDate = new Date();
+    async function carregar() {
+      const p = new URLSearchParams(); if (status.value) p.set("status", status.value);
+      const d = await api("/pendencias?" + p);
+      tb.innerHTML = d.map((x) => `<tr><td>${x.tipo}</td><td>${x.data_ref || "-"}</td><td>${x.descricao}</td>
+        <td><span class="${x.prioridade}">${x.prioridade}</span></td>
+        <td>${x.status === "ABERTA" ? `<button onclick="resolver('${x.id}')">Resolver</button> <button onclick="transformar('${x.id}')">→Tarefa</button>` : x.status}</td></tr>`).join("")
+        || '<tr><td colspan="5">Sem pendências</td></tr>';
+    }
+    async function transformar(id) {
+      await api(`/tarefas/a-partir-de-pendencia/${id}`, { method: "POST", body: JSON.stringify({}) });
+      alert("Tarefa criada a partir da pendência."); location.href = "tarefas.html";
+    }
+    async function sincronizar() {
+      const r = await api("/pendencias/sincronizar-dia", { method: "POST", body: JSON.stringify({ data: data.value }) });
+      alert(`Avaliados: ${r.avaliados} | Geradas: ${r.geradas} | Resolvidas: ${r.resolvidas}`); carregar();
+    }
+    async function resolver(id) { await api(`/pendencias/${id}/resolver`, { method: "POST" }); carregar(); }
+    carregar();
+  </script>
+</body>
+</html>

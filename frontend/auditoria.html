@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auditoria — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    table { width:100%; border-collapse:collapse; } th,td { border-bottom:1px solid #e2e8f0; padding:8px; font-size:.8rem; text-align:left; vertical-align:top; }
+    .bar { display:flex; gap:8px; margin:12px 0; flex-wrap:wrap; }
+    pre { margin:0; white-space:pre-wrap; max-width:300px; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Auditoria</h1><a href="index.html">← Início</a></header>
+    <div class="bar">
+      <input id="tabela" placeholder="tabela (ex: apropriacoes)" />
+      <input id="registro" placeholder="registro_id" />
+      <button onclick="carregar()">Filtrar</button>
+    </div>
+    <table><thead><tr><th>Data/hora</th><th>Usuário</th><th>Ação</th><th>Antes</th><th>Depois</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function api(path) {
+      const t = sessionStorage.getItem("erp_token");
+      const r = await fetch(API_BASE + path, { headers: t ? { Authorization: "Bearer " + t } : {} });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+    async function carregar() {
+      const p = new URLSearchParams();
+      if (tabela.value) p.set("tabela", tabela.value); if (registro.value) p.set("registro_id", registro.value);
+      const d = await api("/auditoria?" + p);
+      tb.innerHTML = d.map((x) => `<tr><td>${x.data_hora}</td><td>${x.usuario_id || "-"}</td>
+        <td>${x.tabela} ${x.acao}</td><td><pre>${JSON.stringify(x.antes, null, 1) || "-"}</pre></td>
+        <td><pre>${JSON.stringify(x.depois, null, 1) || "-"}</pre></td></tr>`).join("") || '<tr><td colspan="5">Sem registros</td></tr>';
+    }
+    carregar();
+  </script>
+</body>
+</html>

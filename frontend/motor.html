@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Motor de regras — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Motor de regras (dry-run)</h1><a href="index.html">← Início</a></header>
+    <div style="display:flex;gap:8px;margin:12px 0">
+      <input id="data" type="date" />
+      <button onclick="avaliarDia()">Avaliar dia</button>
+    </div>
+    <p>Nada é gravado em pendências nesta etapa (ETAPA 11 persiste).</p>
+    <pre id="out"></pre>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    data.valueAsDate = new Date();
+    async function avaliarDia() {
+      const t = sessionStorage.getItem("erp_token");
+      const r = await fetch(API_BASE + "/motor/avaliar-dia", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t },
+        body: JSON.stringify({ data: data.value }),
+      });
+      document.getElementById("out").textContent = JSON.stringify(await r.json(), null, 2);
+    }
+  </script>
+</body>
+</html>

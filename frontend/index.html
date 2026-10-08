@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ERP — Estação de Trabalho</title>
+  <link rel="stylesheet" href="css/base.css" />
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>ERP — Estação de Trabalho</h1></header>
+    <section id="app">
+      <div class="grid" id="hub"></div>
+    </section>
+    <script>
+      const MODS = [["dashboard.html","📊","Dashboard","operação do dia"],["funcionarios.html","👥","Funcionários","cadastro central"],["jornadas.html","🕐","Jornadas","escalas e cargas"],["presencas.html","✅","Presença","lançamento diário"],["apropriacoes.html","🧾","Apropriação","horas por OS"],["horas_extras.html","⏱️","Horas extras","50/70/100"],["pendencias.html","⚠️","Pendências","geradas pelo sistema"],["tarefas.html","📌","Tarefas","kanban manual"],["emails.html","✉️","E-mails","envio de HE"],["absenteismo.html","🏥","Absenteísmo","faltas e taxas"],["relatorios.html","📄","Relatórios","CSV/Excel/PDF"],["auditoria.html","🔍","Auditoria","histórico"],["motor.html","⚙️","Motor","regras dry-run"],["ai.html","🤖","Assistente","resumo e perguntas"]];
+      document.getElementById("hub").innerHTML = MODS.map(([h,i,l,d]) => `<a class="card" href="${h}"><b>${i}</b>${l}<br/><small style="color:var(--muted)">${d}</small></a>`).join("");
+    </script>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+</body>
+</html>

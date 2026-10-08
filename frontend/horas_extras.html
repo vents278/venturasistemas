@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Horas extras — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    table { width:100%; border-collapse:collapse; } th,td { border-bottom:1px solid #e2e8f0; padding:8px; font-size:.9rem; text-align:left; }
+    .bar { display:flex; gap:8px; margin:12px 0; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Horas extras</h1><a href="index.html">← Início</a></header>
+    <div class="bar">
+      <input id="data" type="date" />
+      <button onclick="carregar()">Listar dia</button>
+      <button onclick="recalcular()">Recalcular dia</button>
+    </div>
+    <table><thead><tr><th>Funcionário</th><th>Qtd</th><th>%</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    data.valueAsDate = new Date();
+    async function api(path, opts = {}) {
+      const h = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      const t = sessionStorage.getItem("erp_token");
+      if (t) h.Authorization = "Bearer " + t;
+      const r = await fetch(API_BASE + path, { ...opts, headers: h });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+    async function carregar() { const d = await api("/horas-extras?data=" + data.value);
+      tb.innerHTML = d.map((x) => `<tr><td>${x.funcionario_id}</td><td>${x.qtd_horas}h</td><td>${x.percentual}%</td></tr>`).join("") || '<tr><td colspan="3">Sem HE</td></tr>'; }
+    async function recalcular() { const r = await api("/horas-extras/recalcular-dia", { method: "POST", body: JSON.stringify({ data: data.value }) });
+      alert(`Recalculados: ${r.recalculados} | HE: ${r.horas_extras.length}`); carregar(); }
+    carregar();
+  </script>
+</body>
+</html>

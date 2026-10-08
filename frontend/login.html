@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+</head>
+<body>
+  <main class="loginwrap">
+    <h1>ERP</h1>
+    <p class="sub">Estação de Trabalho — entre com seu usuário</p>
+    <form id="f">
+      <input id="email" type="email" placeholder="email" required />
+      <input id="senha" type="password" placeholder="senha" required />
+      <button type="submit">Entrar</button>
+    </form>
+    <p id="err"></p>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.getElementById("f").onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await Auth.login(email.value, senha.value);
+        location.href = "dashboard.html";
+      } catch (err) { document.getElementById("err").textContent = err.message; }
+    };
+  </script>
+</body>
+</html>

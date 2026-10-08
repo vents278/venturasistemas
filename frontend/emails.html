@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>E-mails — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    table { width:100%; border-collapse:collapse; } th,td { border-bottom:1px solid #e2e8f0; padding:8px; font-size:.85rem; text-align:left; }
+    .bar { display:flex; gap:8px; margin:12px 0; }
+    .PENDENTE { background:#fef9c3; } .ENVIADO { background:#dcfce7; } .ERRO { background:#fee2e2; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>E-mails de HE</h1><a href="index.html">← Início</a></header>
+    <div class="bar">
+      <select id="status"><option value="PENDENTE">pendentes</option><option value="">todos</option><option value="ENVIADO">enviados</option><option value="ERRO">erros</option></select>
+      <button onclick="carregar()">Filtrar</button>
+    </div>
+    <table><thead><tr><th>Assunto</th><th>Destino</th><th>Status</th><th>Enviado em</th><th>Ações</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function api(path, opts = {}) {
+      const h = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      const t = sessionStorage.getItem("erp_token");
+      if (t) h.Authorization = "Bearer " + t;
+      const r = await fetch(API_BASE + path, { ...opts, headers: h });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (!r.ok) throw new Error(await r.text());
+      return r.status === 204 ? null : r.json();
+    }
+    async function carregar() {
+      const p = new URLSearchParams(); if (status.value) p.set("status", status.value);
+      const d = await api("/emails?" + p);
+      tb.innerHTML = d.map((x) => `<tr><td>${x.assunto}</td><td>${x.destinatario || "(sem destino)"}</td>
+        <td><span class="${x.status}">${x.status}</span>${x.erro ? `<br/><small>${x.erro}</small>` : ""}</td>
+        <td>${x.enviado_em || "-"}</td>
+        <td>${x.status !== "ENVIADO" ? `<button onclick="enviar('${x.id}')">Enviar</button>` : ""}</td></tr>`).join("")
+        || '<tr><td colspan="5">Sem e-mails</td></tr>';
+    }
+    async function enviar(id) {
+      try { await api(`/emails/${id}/enviar`, { method: "POST", body: JSON.stringify({}) }); alert("Enviado."); }
+      catch (e) { alert("Falha: " + e.message); }
+      carregar();
+    }
+    carregar();
+  </script>
+</body>
+</html>

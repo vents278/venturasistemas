@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relatórios — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Relatórios</h1><a href="index.html">← Início</a></header>
+    <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+      <select id="recurso">
+        <option value="apropriacoes">Apropriações</option><option value="horas-extras">Horas extras</option>
+        <option value="presencas">Presença</option><option value="absenteismo">Absenteísmo</option>
+        <option value="pendencias">Pendências</option><option value="tarefas">Tarefas</option>
+        <option value="funcionarios">Funcionários</option><option value="emails">E-mails</option>
+      </select>
+      <select id="formato"><option value="csv">CSV</option><option value="xlsx">Excel</option><option value="pdf">PDF</option></select>
+      <input id="de" type="date" /> <input id="ate" type="date" />
+      <button onclick="baixar()">Baixar</button>
+    </div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function baixar() {
+      const p = new URLSearchParams();
+      if (de.value) p.set("de", de.value); if (ate.value) p.set("ate", ate.value);
+      const t = sessionStorage.getItem("erp_token");
+      const r = await fetch(`${API_BASE}/relatorios/${recurso.value}.${formato.value}?` + p,
+        { headers: t ? { Authorization: "Bearer " + t } : {} });
+      if (!r.ok) return alert("Falha: " + await r.text());
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${recurso.value}.${formato.value}`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

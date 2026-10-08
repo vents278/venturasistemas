@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apropriação — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    table { width:100%; border-collapse:collapse; } th,td { border-bottom:1px solid #e2e8f0; padding:8px; font-size:.9rem; text-align:left; }
+    .bar { display:flex; gap:8px; margin:12px 0; flex-wrap:wrap; }
+    #saldo { font-weight:bold; margin:8px 0; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Apropriação</h1><a href="index.html">← Início</a></header>
+    <div class="bar">
+      <input id="data" type="date" />
+      <select id="func"></select>
+      <button onclick="carregar()">Carregar</button>
+      <button onclick="salvar()">Salvar dia</button>
+    </div>
+    <div id="saldo"></div>
+    <table><thead><tr><th>OS</th><th>Horas</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/apropriacoes.js"></script>
+</body>
+</html>
