@@ -1,5 +1,8 @@
-/* Cliente REST desacoplado — backend em http://127.0.0.1:8000 */
-const API_BASE = "http://127.0.0.1:8000";
+/* Em dev (localhost) fala com uvicorn na 8000; publicado, usa /api do mesmo domínio. */
+const API_BASE =
+  location.hostname === "127.0.0.1" || location.hostname === "localhost"
+    ? "http://127.0.0.1:8000"
+    : location.origin + "/api";
 
 async function apiGet(path) {
   const headers = {};
