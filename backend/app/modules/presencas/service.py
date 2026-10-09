@@ -77,3 +77,58 @@ def excluir(pid: str, usuario_id: str | None = None) -> None:
         raise KeyError("Presença não encontrada")
     repo.delete_repo(pid)
     audit(usuario_id, "presencas", pid, "excluir", row, None)
+
+
+def montar_grade(de: str, ate: str, setor: str | None = None) -> dict:
+    """Grade presença × dias: cada célula traz status, obs e apropriações do dia."""
+    from datetime import date as _date
+    from datetime import timedelta
+
+    from app.modules.apropriacoes import repository as ap_repo
+
+    ini, fim = _date.fromisoformat(de), _date.fromisoformat(ate)
+    if ini > fim:
+        raise ValueError("Período inválido (de > ate)")
+    dias = [str(ini + timedelta(days=i)) for i in range((fim - ini).days + 1)]
+    if len(dias) > 62:
+        raise ValueError("Período máximo de 62 dias")
+
+    pres = repo.list_repo(None, de, ate, None, None)
+    aprs = ap_repo.list_repo(None, de, ate, None, None)
+    fids = {p["funcionario_id"] for p in pres} | {a["funcionario_id"] for a in aprs}
+    nomes = _nomes_funcionarios(fids, setor)
+
+    por_func: dict = {fid: {} for fid in nomes}
+    for p in pres:
+        if p["funcionario_id"] in por_func:
+            por_func[p["funcionario_id"]][p["data"]] = {
+                "status": p["status_codigo"], "obs": p.get("obs"), "apropriacoes": [], "total": 0.0,
+            }
+    for a in aprs:
+        fid = a["funcionario_id"]
+        if fid not in por_func:
+            continue
+        cel = por_func[fid].setdefault(a["data"], {"status": None, "obs": None, "apropriacoes": [], "total": 0.0})
+        cel["apropriacoes"].append({
+            "os_id": a["os_id"],
+            "os_codigo": (a.get("ordens_servico") or {}).get("codigo"),
+            "horas": float(a["horas"]),
+        })
+        cel["total"] = round(cel["total"] + float(a["horas"]), 2)
+    linhas = [{"funcionario": nomes[fid], "dias": por_func[fid]} for fid in sorted(nomes, key=lambda f: nomes[f]["nome"])]
+    return {"de": de, "ate": ate, "dias": dias, "linhas": linhas}
+
+
+def _nomes_funcionarios(fids: set, setor: str | None = None) -> dict:
+    from app.core.supabase_client import get_supabase
+
+    if not fids:
+        return {}
+    sb = get_supabase()
+    rows = sb.table("funcionarios").select("id,matricula,nome,setor,ativo").in_("id", sorted(fids)).execute().data or []
+    out = {}
+    for r in rows:
+        if setor and r.get("setor") != setor:
+            continue
+        out[r["id"]] = {"id": r["id"], "matricula": r.get("matricula"), "nome": r.get("nome"), "setor": r.get("setor")}
+    return out

@@ -19,6 +19,16 @@ def status_presenca(_: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.get("/grade")
+def grade(de: str, ate: str, setor: str | None = None, _: dict = Depends(get_current_user)):
+    try:
+        return service.montar_grade(de, ate, setor)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.get("")
 def listar(
     data: str | None = None,
