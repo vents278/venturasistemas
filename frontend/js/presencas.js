@@ -43,9 +43,6 @@ async function carregar() {
   if (area.value) p.set("area", area.value);
   if (sup.value) p.set("supervisor_id", sup.value);
   if (setor.value) p.set("setor", setor.value);
-  const { de, ate } = mesRange();
-  const p = new URLSearchParams({ de, ate });
-  if (setor.value) p.set("setor", setor.value);
   GRADE = await api("/presencas/grade?" + p);
   const dias = GRADE.dias;
   gh.innerHTML = `<tr><th class="sticky">Funcionário</th>` + dias.map((d) => {
