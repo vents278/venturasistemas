@@ -23,6 +23,16 @@
     </div>
     <div id="saldo"></div>
     <table><thead><tr><th>OS</th><th>Horas</th></tr></thead><tbody id="tb"></tbody></table>
+    <h2 style="margin-top:24px">Em massa por ordem</h2>
+    <p style="color:var(--muted)">Uma ordem distribuída em vários funcionários de uma vez. Reflete na grade de presença.</p>
+    <div class="bar">
+      <input id="data2" type="date" />
+      <select id="os2"></select>
+      <button onclick="carregarMassa()">Carregar</button>
+      <button onclick="salvarMassa()" class="btn-primary">Salvar massa</button>
+    </div>
+    <div id="totalMassa"></div>
+    <table><thead><tr><th>Funcionário</th><th>Horas na ordem</th></tr></thead><tbody id="tb2"></tbody></table>
   </main>
   <script src="js/api.js"></script>
   <script src="js/layout.js"></script>

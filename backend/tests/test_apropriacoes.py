@@ -51,3 +51,31 @@ def test_lote_teto_wiring(admin_client, monkeypatch):
         ],
     })
     assert r.status_code == 400  # 25h > teto
+
+
+def test_lote_os_ok_e_teto_por_funcionario(monkeypatch, admin_client):
+    from app.modules.apropriacoes import service
+
+    monkeypatch.setattr(repo, "get_os", lambda oid: {"id": oid})
+    monkeypatch.setattr(repo, "get_funcionario", lambda fid: {"id": fid, "ativo": True, "desligamento": None})
+    monkeypatch.setattr(repo, "total_dia", lambda fid, *a, **k: 23.0 if fid == "F2" else 0)
+    monkeypatch.setattr(repo, "upsert_repo", lambda p: p)
+    out = service.registrar_lote_os("2026-10-08", "O1", [
+        type("I", (), {"funcionario_id": "F1", "horas": 8.0})(),
+        type("I", (), {"funcionario_id": "F2", "horas": 2.0})(),
+    ])
+    assert out["ok"] == 1 and len(out["erros"]) == 1
+
+    r = admin_client.post("/apropriacoes/lote-os", json={
+        "data": "2026-10-08", "os_id": "00000000-0000-0000-0000-000000000011",
+        "itens": [{"funcionario_id": "00000000-0000-0000-0000-000000000001", "horas": 8}],
+    })
+    assert r.status_code == 201, r.text
+
+
+def test_lote_os_404_quando_os_inexistente(admin_client):
+    r = admin_client.post("/apropriacoes/lote-os", json={
+        "data": "2026-10-08", "os_id": "00000000-0000-0000-0000-000000000099",
+        "itens": [{"funcionario_id": "00000000-0000-0000-0000-000000000001", "horas": 8}],
+    })
+    assert r.status_code == 404

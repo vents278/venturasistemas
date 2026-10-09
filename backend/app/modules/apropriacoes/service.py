@@ -58,6 +58,23 @@ def registrar_lote(funcionario_id: str, data_str: str, itens: list) -> dict:
     return {**saldo(funcionario_id, data_str), "lancados": len(itens)}
 
 
+def registrar_lote_os(data_str: str, os_id: str, itens: list) -> dict:
+    """Apropriação em massa: uma ordem distribuída em N funcionários (aparece na grade)."""
+    if not repo.get_os(os_id):
+        raise KeyError("OS não encontrada")
+    ok, erros = 0, []
+    for it in itens:
+        fid = str(it.funcionario_id)
+        try:
+            _validar_vinculos(fid, data_str, os_id)
+            _checar_teto(fid, data_str, it.horas)
+            repo.upsert_repo({"funcionario_id": fid, "data": data_str, "os_id": os_id, "horas": it.horas})
+            ok += 1
+        except (KeyError, ValueError) as exc:
+            erros.append({"funcionario_id": fid, "erro": str(exc)})
+    return {"data": data_str, "os_id": os_id, "ok": ok, "erros": erros}
+
+
 def atualizar(ap_id: str, horas: float, usuario_id: str | None = None) -> dict:
     atual = repo.get_repo(ap_id)
     if not atual:

@@ -13,11 +13,17 @@ async function api(path, opts = {}) {
 
 data.valueAsDate = new Date();
 
+let FUNCS = [];
+
 async function init() {
   const f = await api("/funcionarios?ativo=true&limit=100");
-  func.innerHTML = f.items.map((x) => `<option value="${x.id}">${x.matricula} — ${x.nome}</option>`).join("");
+  FUNCS = f.items;
+  func.innerHTML = FUNCS.map((x) => `<option value="${x.id}">${x.matricula} — ${x.nome}</option>`).join("");
   OSS = await api("/os");
+  os2.innerHTML = OSS.map((o) => `<option value="${o.id}">${o.codigo}</option>`).join("");
+  data2.valueAsDate = new Date();
   await carregar();
+  await carregarMassa();
 }
 
 async function carregar() {
@@ -37,6 +43,22 @@ async function salvar() {
   const r = await api("/apropriacoes/lote", { method: "POST", body: JSON.stringify({ funcionario_id: func.value, data: data.value, itens }) });
   alert(`Apropriado: ${r.total_apropriado}h / Carga: ${r.carga_prevista}h (saldo ${r.saldo}h)`);
   carregar();
+}
+
+async function carregarMassa() {
+  const map = Object.fromEntries((await api(`/apropriacoes?os_id=${os2.value}&data=${data2.value}`)).map((a) => [a.funcionario_id, a.horas]));
+  tb2.innerHTML = FUNCS.map((f) => `<tr data-fid="${f.id}"><td>${f.nome}</td>
+    <td><input type="number" min="0" max="24" step="0.5" value="${map[f.id] || ""}" placeholder="0" /></td></tr>`).join("");
+  totalMassa.textContent = "";
+}
+
+async function salvarMassa() {
+  const itens = [...tb2.rows].map((tr) => ({ funcionario_id: tr.dataset.fid, horas: parseFloat(tr.querySelector("input").value) || 0 }))
+    .filter((x) => x.horas > 0);
+  if (!itens.length) return alert("Informe horas para ao menos um funcionário.");
+  const r = await api("/apropriacoes/lote-os", { method: "POST", body: JSON.stringify({ data: data2.value, os_id: os2.value, itens }) });
+  alert(`OK: ${r.ok}` + (r.erros.length ? ` | Erros: ${r.erros.length} (${r.erros[0].erro})` : ""));
+  carregarMassa();
 }
 
 init();

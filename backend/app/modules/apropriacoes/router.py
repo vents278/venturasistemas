@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.modules.apropriacoes import service
-from app.modules.apropriacoes.schemas import ApropriacaoIn, ApropriacaoLoteIn, ApropriacaoUpdate
+from app.modules.apropriacoes.schemas import ApropriacaoIn, ApropriacaoLoteIn, ApropriacaoLoteOSIn, ApropriacaoUpdate
 from app.modules.auth.dependencies import get_current_user, require_gestor
 
 router = APIRouter(prefix="/apropriacoes", tags=["apropriacoes"])
@@ -56,6 +56,16 @@ def registrar(body: ApropriacaoIn, _: dict = Depends(require_gestor)):
 def registrar_lote(body: ApropriacaoLoteIn, _: dict = Depends(require_gestor)):
     try:
         return service.registrar_lote(str(body.funcionario_id), str(body.data), body.itens)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/lote-os", status_code=201)
+def registrar_lote_os(body: ApropriacaoLoteOSIn, _: dict = Depends(require_gestor)):
+    try:
+        return service.registrar_lote_os(str(body.data), str(body.os_id), body.itens)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:

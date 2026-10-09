@@ -34,3 +34,14 @@ class ApropriacaoLoteIn(BaseModel):
     funcionario_id: UUID
     data: date
     itens: list[ApropriacaoItem]
+
+
+class ApropriacaoLoteOSItem(BaseModel):
+    funcionario_id: UUID
+    horas: float = Field(gt=0, le=24)
+
+
+class ApropriacaoLoteOSIn(BaseModel):
+    data: date
+    os_id: UUID
+    itens: list[ApropriacaoLoteOSItem]
