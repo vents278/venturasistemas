@@ -43,3 +43,21 @@ def update_repo(func_id: str, payload: dict):
 
 def set_ativo_repo(func_id: str, ativo: bool):
     return update_repo(func_id, {"ativo": ativo})
+
+
+def exists_matricula(matricula: str) -> bool:
+    sb = get_supabase()
+    r = sb.table("funcionarios").select("id").eq("matricula", matricula).limit(1).execute()
+    return bool(r.data)
+
+
+def list_ativos_full():
+    sb = get_supabase()
+    r = sb.table("funcionarios").select("id,matricula,nome,cargo,area,setor,supervisor_id,jornada_id,ativo,em_treinamento,desligamento").eq("ativo", True).order("nome").execute()
+    return r.data or []
+
+
+def list_treinamento():
+    sb = get_supabase()
+    r = sb.table("funcionarios").select("id,matricula,nome,cargo,area,setor,supervisor_id,jornada_id,ativo,em_treinamento,desligamento").eq("em_treinamento", True).order("nome").execute()
+    return r.data or []

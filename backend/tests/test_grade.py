@@ -17,13 +17,15 @@ def user_client():
 
 def test_grade_agrupa(monkeypatch):
     from app.modules.apropriacoes import repository as ap_repo
+    from app.modules.funcionarios import repository as fn_repo
     from app.modules.presencas import repository as pr_repo
 
     monkeypatch.setattr(pr_repo, "list_repo", lambda *a, **k: [
         {"funcionario_id": "F1", "data": "2026-10-08", "status_codigo": "PRESENTE", "obs": "ok"}])
     monkeypatch.setattr(ap_repo, "list_repo", lambda *a, **k: [
         {"funcionario_id": "F1", "data": "2026-10-08", "os_id": "O1", "horas": 5.0, "ordens_servico": {"codigo": "OS1"}}])
-    monkeypatch.setattr(service, "_nomes_funcionarios", lambda fids, setor: {"F1": {"id": "F1", "matricula": "M1", "nome": "Joao", "setor": "O"}})
+    monkeypatch.setattr(fn_repo, "list_ativos_full", lambda: [
+        {"id": "F1", "matricula": "M1", "nome": "Joao", "setor": "O", "area": None, "supervisor_id": None, "jornada_id": None}])
     g = service.montar_grade("2026-10-01", "2026-10-08", None)
     assert g["dias"][0] == "2026-10-01" and len(g["dias"]) == 8
     cel = g["linhas"][0]["dias"]["2026-10-08"]
@@ -40,3 +42,18 @@ def test_grade_wiring(user_client, monkeypatch):
     monkeypatch.setattr(service, "montar_grade", lambda *a, **k: {"dias": [], "linhas": []})
     r = user_client.get("/presencas/grade?de=2026-10-01&ate=2026-10-08")
     assert r.status_code == 200, r.text
+
+
+def test_lancamento_diario_treinamento_primeiro(monkeypatch):
+    from app.modules.funcionarios import repository as fn_repo
+    from app.modules.presencas import repository as pr_repo
+
+    monkeypatch.setattr(pr_repo, "list_repo", lambda *a, **k: [])
+    monkeypatch.setattr(fn_repo, "list_treinamento", lambda: [{"id": "FT", "desligamento": None}])
+    monkeypatch.setattr(fn_repo, "list_ativos_full", lambda: [{"id": "FA", "em_treinamento": False, "desligamento": None}])
+    feitas = []
+    monkeypatch.setattr(pr_repo, "upsert_repo", lambda p: feitas.append(p) or {"id": "x"})
+    monkeypatch.setattr(service, "montar_payload", lambda fid, d, st, j, o: {"funcionario_id": fid, "status": st})
+    out = service.lancamento_diario("2026-10-08", "PRESENTE")
+    assert out == {"data": "2026-10-08", "presentes": 1, "treinamento": 1, "ja_existiam": 0}
+    assert {f["funcionario_id"]: f["status"] for f in feitas} == {"FT": "TREINAMENTO", "FA": "PRESENTE"}

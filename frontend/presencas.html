@@ -33,8 +33,13 @@
       <button onclick="mudarMes(-1)">◀</button>
       <input id="mes" type="month" />
       <button onclick="mudarMes(1)">▶</button>
-      <input id="setor" placeholder="setor (opcional)" />
+      <input id="q" placeholder="pesquisar nome..." />
+      <input id="area" placeholder="área..." />
+      <select id="sup"><option value="">supervisor: todos</option></select>
+      <input id="setor" placeholder="setor..." />
       <button onclick="carregar()">Carregar</button>
+      <input id="dia" type="date" />
+      <button onclick="gerarDia()" title="Lança presença do dia (treinamento p/ quem está em treinamento, padrão p/ demais)">Gerar dia</button>
     </div>
     <div class="gradewrap"><table class="grade"><thead id="gh"></thead><tbody id="gb"></tbody></table></div>
   </main>
@@ -42,6 +47,9 @@
     <h2 id="mt">Dia</h2>
     <label>Status
       <select id="f_status" class="full" style="width:100%"></select>
+    </label>
+    <label>Jornada do dia
+      <select id="f_jornada_dia" class="full" style="width:100%"></select>
     </label>
     <label>Observações do dia
       <textarea id="f_obs" rows="2" style="width:100%"></textarea>

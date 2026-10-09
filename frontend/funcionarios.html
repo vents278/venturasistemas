@@ -28,21 +28,21 @@
       <button onclick="carregar()">Filtrar</button>
       <button onclick="abrirModal()">+ Novo</button>
     </div>
-    <table><thead><tr><th>Matrícula</th><th>Nome</th><th>Setor</th><th>Status</th><th>Ações</th></tr></thead>
+    <table><thead><tr><th>Matrícula</th><th>Nome</th><th>Cargo</th><th>Área</th><th>Status</th><th>Ações</th></tr></thead>
     <tbody id="tb"></tbody></table>
   </main>
   <div id="modal"><form id="form">
     <h2 id="mt">Novo funcionário</h2>
-    <input id="f_matricula" placeholder="matrícula *" required />
-    <input id="f_nome" placeholder="nome completo *" required />
-    <input id="f_cpf" placeholder="cpf" />
+    <input id="f_nome" placeholder="nome completo *" required class="full" />
     <input id="f_cargo" placeholder="cargo" />
-    <input id="f_area" placeholder="área" />
+    <input id="f_area" placeholder="área de atuação" />
+    <select id="f_sup"><option value="">supervisor responsável...</option></select>
+    <select id="f_jornada"><option value="">jornada padrão...</option></select>
+    <label class="full"><input id="f_trein" type="checkbox" style="width:auto" /> em treinamento (entra sozinho na grade como TREINAMENTO até ser ativado)</label>
+    <input id="f_matricula" placeholder="matrícula (auto se vazio)" />
     <input id="f_setor" placeholder="setor" />
-    <input id="f_empresa" placeholder="empresa" />
-    <label>Admissão<input id="f_admissao" type="date" required /></label>
+    <label>Admissão<input id="f_admissao" type="date" /></label>
     <label>Desligamento<input id="f_deslig" type="date" /></label>
-    <select id="f_jornada"><option value="">jornada...</option></select>
     <input id="f_obs" placeholder="observações" class="full" />
     <button type="submit" class="full">Salvar</button>
     <button type="button" class="full" onclick="fecharModal()">Cancelar</button>

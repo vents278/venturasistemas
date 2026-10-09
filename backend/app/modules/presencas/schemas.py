@@ -46,3 +46,8 @@ class LoteItem(BaseModel):
 class LoteIn(BaseModel):
     data: date
     itens: list[LoteItem]
+
+
+class LancamentoDiarioIn(BaseModel):
+    data: date
+    status_padrao: str = "PRESENTE"

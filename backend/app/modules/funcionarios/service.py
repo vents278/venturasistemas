@@ -14,7 +14,21 @@ def _payload(body) -> dict:
     for k in ("jornada_id", "supervisor_id"):
         if d.get(k) is not None:
             d[k] = str(d[k])
+    if d.get("admissao") is not None:
+        d["admissao"] = str(d["admissao"])
+    if d.get("desligamento") is not None:
+        d["desligamento"] = str(d["desligamento"])
     return d
+
+
+def _gerar_matricula() -> str:
+    import random
+
+    for _ in range(5):
+        cand = f"M{random.randint(100000, 999999)}"
+        if not repo.exists_matricula(cand):
+            return cand
+    raise ValueError("Não foi possível gerar matrícula única")
 
 
 def listar(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20):
@@ -28,17 +42,25 @@ def detalhar(func_id: str) -> dict:
     return row
 
 
-def criar(body) -> dict:
+def criar(body, usuario_id: str | None = None) -> dict:
     validar_datas(body.admissao, body.desligamento)
-    if body.supervisor_id is not None and str(body.supervisor_id) == "":
-        body.supervisor_id = None  # type: ignore
+    payload = _payload(body)
+    from datetime import date as _date
+
+    payload.setdefault("admissao", str(_date.today()))
+    if not payload.get("matricula"):
+        payload["matricula"] = _gerar_matricula()
+    if payload.get("supervisor_id") == "":
+        payload.pop("supervisor_id", None)
     try:
-        return repo.create_repo(_payload(body))
+        depois = repo.create_repo(payload)
     except Exception as exc:
         msg = str(exc).lower()
         if "duplicate" in msg or "unique" in msg:
-            raise ValueError("Matrícula ou CPF já cadastrado")
+            raise ValueError("Matrícula já cadastrada")
         raise
+    audit(usuario_id, "funcionarios", depois.get("id"), "criar", None, depois)
+    return depois
 
 
 def atualizar(func_id: str, body, usuario_id: str | None = None) -> dict:
@@ -52,6 +74,8 @@ def atualizar(func_id: str, body, usuario_id: str | None = None) -> dict:
     )
     if patch.get("supervisor_id") == func_id:
         raise ValueError("Supervisor não pode ser o próprio funcionário")
+    if patch.get("ativo") is True:
+        patch["em_treinamento"] = False  # ativou → sai do treinamento automático
     depois = repo.update_repo(func_id, patch)
     audit(usuario_id, "funcionarios", func_id, "atualizar", atual, depois)
     return depois

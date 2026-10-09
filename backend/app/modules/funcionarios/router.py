@@ -15,6 +15,10 @@ def _to_out(row: dict) -> FuncionarioOut:
     for k in ("jornada_id", "supervisor_id", "id"):
         if row.get(k) is not None:
             row[k] = str(row[k])
+    if row.get("em_treinamento") is None:
+        row["em_treinamento"] = False
+    if row.get("ativo") is None:
+        row["ativo"] = True
     return FuncionarioOut(**{k: row.get(k) for k in FuncionarioOut.model_fields})
 
 
@@ -45,9 +49,9 @@ def detalhar(func_id: str, _: dict = Depends(get_current_user)):
 
 
 @router.post("", response_model=FuncionarioOut, status_code=201)
-def criar(body: FuncionarioIn, _: dict = Depends(require_gestor)):
+def criar(body: FuncionarioIn, user: dict = Depends(require_gestor)):
     try:
-        return _to_out(service.criar(body))
+        return _to_out(service.criar(body, user.get("id")))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

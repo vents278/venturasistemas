@@ -1,58 +1,52 @@
-"""Schemas funcionários — ETAPA 5. Entidade central do ERP."""
+"""Schemas funcionários. Cadastro: nome, cargo, área, supervisor (+ matrícula/admissão automáticas)."""
 
 from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class FuncionarioIn(BaseModel):
-    matricula: str
     nome: str
-    cpf: str | None = None
     cargo: str | None = None
     area: str | None = None
+    supervisor_id: UUID | None = None
+    matricula: str | None = None
+    admissao: date = Field(default_factory=date.today)
     setor: str | None = None
-    empresa: str | None = None
-    admissao: date
     desligamento: date | None = None
     ativo: bool = True
-    jornada_id: UUID | None = None
-    supervisor_id: UUID | None = None
+    em_treinamento: bool = False
+    jornada_id: UUID | None = None  # jornada padrão (a do dia é lançada na grade)
     observacoes: str | None = None
 
-    @field_validator("matricula", "nome")
+    @field_validator("nome")
     @classmethod
-    def _strip_obrigatorio(cls, v: str) -> str:
+    def _nome(cls, v: str) -> str:
         v = (v or "").strip()
         if not v:
             raise ValueError("obrigatório")
         return v
 
-    @field_validator("cpf")
+    @field_validator("matricula")
     @classmethod
-    def _cpf(cls, v: str | None) -> str | None:
-        if v is None or str(v).strip() == "":
-            return None
-        d = "".join(ch for ch in str(v) if ch.isdigit())
-        if len(d) != 11 or len(set(d)) == 1:
-            raise ValueError("CPF inválido")
-        return d
+    def _mat(cls, v: str | None) -> str | None:
+        v = (v or "").strip() if v else None
+        return v or None
 
 
 class FuncionarioUpdate(BaseModel):
-    matricula: str | None = None
     nome: str | None = None
-    cpf: str | None = None
     cargo: str | None = None
     area: str | None = None
-    setor: str | None = None
-    empresa: str | None = None
+    supervisor_id: UUID | None = None
+    matricula: str | None = None
     admissao: date | None = None
+    setor: str | None = None
     desligamento: date | None = None
     ativo: bool | None = None
+    em_treinamento: bool | None = None
     jornada_id: UUID | None = None
-    supervisor_id: UUID | None = None
     observacoes: str | None = None
 
 
@@ -60,14 +54,13 @@ class FuncionarioOut(BaseModel):
     id: str
     matricula: str
     nome: str
-    cpf: str | None = None
     cargo: str | None = None
     area: str | None = None
     setor: str | None = None
-    empresa: str | None = None
+    supervisor_id: str | None = None
     admissao: date
     desligamento: date | None = None
     ativo: bool
+    em_treinamento: bool = False
     jornada_id: str | None = None
-    supervisor_id: str | None = None
     observacoes: str | None = None

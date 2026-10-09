@@ -20,9 +20,29 @@ def admin_client():
     app.dependency_overrides.pop(get_current_user, None)
 
 
-def test_cpf_invalido():
+def test_nome_obrigatorio():
     with pytest.raises(Exception):
-        FuncionarioIn(matricula="1", nome="Joao", admissao=date(2026, 1, 1), cpf="11111111111")
+        FuncionarioIn(nome="  ")
+
+
+def test_matricula_auto_quando_vazia(monkeypatch):
+    from app.modules.funcionarios import repository as repo
+
+    monkeypatch.setattr(repo, "exists_matricula", lambda m: False)
+    monkeypatch.setattr(repo, "create_repo", lambda p: {"id": "F1", **p})
+    out = service.criar(FuncionarioIn(nome="Joao"), "U1")
+    assert out["matricula"].startswith("M") and out["admissao"] == str(date.today())
+
+
+def test_ativar_limpa_treinamento(monkeypatch):
+    from app.modules.funcionarios import repository as repo
+    from app.modules.funcionarios.schemas import FuncionarioUpdate
+
+    monkeypatch.setattr(repo, "get_repo", lambda fid: {"id": fid, "em_treinamento": True})
+    seen = {}
+    monkeypatch.setattr(repo, "update_repo", lambda fid, p: seen.setdefault("p", p) or {"id": fid})
+    service.atualizar("F1", FuncionarioUpdate(ativo=True), "U1")
+    assert seen["p"]["em_treinamento"] is False
 
 
 def test_desligamento_antes_admissao():
@@ -40,8 +60,8 @@ def test_listar_usa_repositorio_mockado(monkeypatch, admin_client):
 
 
 def test_criar_400_quando_duplicado(monkeypatch, admin_client):
-    def boom(body):
-        raise ValueError("Matrícula ou CPF já cadastrado")
+    def boom(body, *a):
+        raise ValueError("Matrícula já cadastrada")
 
     monkeypatch.setattr(service, "criar", boom)
     r = admin_client.post("/funcionarios", json={"matricula": "M1", "nome": "Joao", "admissao": "2026-01-01"})
