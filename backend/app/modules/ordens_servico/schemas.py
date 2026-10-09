@@ -1,5 +1,6 @@
-"""Schemas OS — ETAPA 8."""
+"""Schemas OS."""
 
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
@@ -10,6 +11,7 @@ STATUS_OS = {"ABERTA", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"}
 class OSIn(BaseModel):
     codigo: str
     descricao: str | None = None
+    data_execucao: date | None = None
     status: str = "ABERTA"
     responsavel_id: UUID | None = None
 
@@ -32,6 +34,7 @@ class OSIn(BaseModel):
 
 class OSUpdate(BaseModel):
     descricao: str | None = None
+    data_execucao: date | None = None
     status: str | None = None
     responsavel_id: UUID | None = None
 
@@ -40,5 +43,6 @@ class OSOut(BaseModel):
     id: str
     codigo: str
     descricao: str | None = None
+    data_execucao: date | None = None
     status: str
     responsavel_id: str | None = None

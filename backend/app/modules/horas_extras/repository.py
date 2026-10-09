@@ -40,3 +40,16 @@ def limpar_dia(funcionario_id: str, data_str: str):
 def limpar_percentual(he_id: str):
     sb = get_supabase()
     sb.table("horas_extras").delete().eq("id", he_id).execute()
+
+
+def get_percentuais() -> dict:
+    """Percentuais configuráveis (parametros_he) com fallback 50/70/100."""
+    from app.engine.regras.hora_extra import PADRAO
+
+    try:
+        sb = get_supabase()
+        rows = (sb.table("parametros_he").select("condicao,percentual").execute().data) or []
+        out = {r["condicao"]: int(r["percentual"]) for r in rows if r.get("condicao") in PADRAO}
+        return {**PADRAO, **out}
+    except Exception:
+        return dict(PADRAO)

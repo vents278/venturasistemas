@@ -138,19 +138,28 @@ def montar_grade(de: str, ate: str, setor: str | None = None, q: str | None = No
         if p["funcionario_id"] in por_func:
             por_func[p["funcionario_id"]][p["data"]] = {
                 "status": p["status_codigo"], "obs": p.get("obs"),
-                "jornada_id": p.get("jornada_id"), "apropriacoes": [], "total": 0.0,
+                "jornada_id": p.get("jornada_id"), "apropriacoes": [],
+                "total": 0.0, "normais": 0.0, "extras": 0.0,
             }
     for a in aprs:
         fid = a["funcionario_id"]
         if fid not in por_func:
             continue
-        cel = por_func[fid].setdefault(a["data"], {"status": None, "obs": None, "jornada_id": None, "apropriacoes": [], "total": 0.0})
+        cel = por_func[fid].setdefault(a["data"], {"status": None, "obs": None, "jornada_id": None,
+                                                    "apropriacoes": [], "total": 0.0, "normais": 0.0, "extras": 0.0})
+        n, e = float(a.get("horas_normais") or 0), float(a.get("horas_extras") or 0)
         cel["apropriacoes"].append({
+            "id": a.get("id"),
             "os_id": a["os_id"],
             "os_codigo": (a.get("ordens_servico") or {}).get("codigo"),
+            "os_descricao": (a.get("ordens_servico") or {}).get("descricao"),
             "horas": float(a["horas"]),
+            "normal": n,
+            "extra": e,
         })
         cel["total"] = round(cel["total"] + float(a["horas"]), 2)
+        cel["normais"] = round(cel["normais"] + n, 2)
+        cel["extras"] = round(cel["extras"] + e, 2)
     linhas = [{"funcionario": nomes[fid], "dias": por_func[fid]} for fid in sorted(nomes, key=lambda f: nomes[f]["nome"])]
     return {"de": de, "ate": ate, "dias": dias, "linhas": linhas}
 

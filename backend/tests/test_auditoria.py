@@ -25,6 +25,7 @@ def test_atualizar_apropriacao_audita(monkeypatch):
     monkeypatch.setattr(repo, "update_repo", lambda aid, p: {"id": aid, "horas": 9.0})
     chamadas = []
     monkeypatch.setattr(service, "audit", lambda *a, **k: chamadas.append((a, k)))
+    monkeypatch.setattr(service, "distribuir", lambda *a, **k: {})
     out = service.atualizar("A1", 9.0, "U9")
     assert out["horas"] == 9.0
     assert len(chamadas) == 1 and chamadas[0][0][1] == "apropriacoes"
@@ -42,8 +43,10 @@ def test_falha_na_auditoria_nao_quebra(monkeypatch):
         raise RuntimeError("supabase fora")
 
     from app.core import supabase_client
+    from app.modules.apropriacoes import service as ap_service
 
     monkeypatch.setattr(supabase_client, "get_supabase", boom)
+    monkeypatch.setattr(ap_service, "distribuir", lambda *a, **k: {})
     assert service.atualizar("A1", 2.0, "U9")["horas"] == 2.0
 
 

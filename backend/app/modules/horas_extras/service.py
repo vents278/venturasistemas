@@ -23,7 +23,7 @@ def recalcular(funcionario_id: str, data_str: str) -> dict | None:
 
     carga = ap_repo.carga_prevista(funcionario_id, data_str)
     total = ap_repo.total_dia(funcionario_id, data_str)
-    he = calcular_he(_dow(data_str), fe_repo.is_feriado(data_str), carga, total)
+    he = calcular_he(_dow(data_str), fe_repo.is_feriado(data_str), carga, total, repo.get_percentuais())
     existentes = repo.list_repo(data_str, None, None, funcionario_id, None)
     if not he:
         if existentes:

@@ -57,8 +57,14 @@
     <div id="saldo"></div>
     <div>
       <strong>Apropriação do dia (ordens)</strong>
+      <div class="bar">
+        <input id="os_busca" placeholder="pesquisar OS p/ adicionar..." style="flex:1" />
+        <button type="button" onclick="buscarOSGrade()">Buscar</button>
+        <button type="button" onclick="novaOSGrade()">+ Nova OS</button>
+      </div>
+      <div id="os_res"></div>
       <div id="linhas" class="linhas"></div>
-      <button type="button" onclick="addLinha()">+ Ordem</button>
+      <label style="display:block;margin-top:6px"><input id="he_flag" type="checkbox" disabled style="width:auto" /> Contém horas extras</label>
     </div>
     <button type="submit" class="btn-primary">Salvar dia</button>
     <button type="button" onclick="fecharModal()">Fechar</button>

@@ -18,9 +18,9 @@ def listar(q: str | None = None, status: str | None = None, _: dict = Depends(ge
 
 
 @router.get("/{os_id}")
-def detalhar(os_id: str, _: dict = Depends(get_current_user)):
+def detalhar(os_id: str, de: str | None = None, ate: str | None = None, _: dict = Depends(get_current_user)):
     try:
-        return service.detalhar(os_id)
+        return service.detalhe_completo(os_id, de, ate)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 

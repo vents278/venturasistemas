@@ -40,7 +40,10 @@ def test_lote_teto_wiring(admin_client, monkeypatch):
     monkeypatch.setattr(repo, "get_funcionario", lambda fid: {"id": fid, "ativo": True, "desligamento": None})
     monkeypatch.setattr(repo, "get_os", lambda oid: {"id": oid})
     monkeypatch.setattr(repo, "total_dia", lambda *a, **k: 0)
-    monkeypatch.setattr(repo, "upsert_repo", lambda p: p)
+    monkeypatch.setattr(repo, "exists_repo", lambda *a, **k: None)
+    monkeypatch.setattr(repo, "create_repo", lambda p: {"id": "A1", **p})
+    monkeypatch.setattr(repo, "get_repo", lambda aid: {"id": aid})
+    monkeypatch.setattr(service, "distribuir", lambda *a, **k: {})
     monkeypatch.setattr(repo, "carga_prevista", lambda *a, **k: 9.0)
     r = admin_client.post("/apropriacoes/lote", json={
         "funcionario_id": "00000000-0000-0000-0000-000000000001",
@@ -53,13 +56,54 @@ def test_lote_teto_wiring(admin_client, monkeypatch):
     assert r.status_code == 400  # 25h > teto
 
 
+def test_duplicada_bloqueia_sem_upsert_silencioso(monkeypatch):
+    monkeypatch.setattr(repo, "get_funcionario", lambda fid: {"id": fid, "ativo": True, "desligamento": None})
+    monkeypatch.setattr(repo, "get_os", lambda oid: {"id": oid})
+    monkeypatch.setattr(repo, "total_dia", lambda *a, **k: 0)
+    monkeypatch.setattr(repo, "exists_repo", lambda *a, **k: {"id": "OLD"})
+    from app.modules.apropriacoes.schemas import ApropriacaoIn
+
+    with pytest.raises(ValueError, match="Utilize a opção Editar"):
+        service.registrar(ApropriacaoIn(
+            funcionario_id="00000000-0000-0000-0000-000000000001", data="2026-10-08",
+            os_id="00000000-0000-0000-0000-000000000011", horas=4.0))
+
+
+def test_distribuir_cronologica(monkeypatch):
+    monkeypatch.setattr(repo, "carga_prevista", lambda *a, **k: 9.0)
+    monkeypatch.setattr(repo, "linhas_dia", lambda *a, **k: [
+        {"id": "A1", "horas": 5.0}, {"id": "A2", "horas": 4.0}, {"id": "A3", "horas": 3.0}])
+    grav = {}
+    monkeypatch.setattr(repo, "update_repo", lambda aid, p: grav.setdefault(aid, p))
+    out = service.distribuir("F", "2026-10-08")
+    assert (out["normais"], out["extras"], out["total"]) == (9.0, 3.0, 12.0)
+    assert grav["A1"] == {"horas_normais": 5.0, "horas_extras": 0.0}
+    assert grav["A3"] == {"horas_normais": 0.0, "horas_extras": 3.0}
+
+
+def test_consulta_resumo(admin_client, monkeypatch):
+    from app.modules.funcionarios import repository as fn_repo
+
+    monkeypatch.setattr(fn_repo, "get_repo", lambda fid: {"id": fid, "nome": "Joao", "matricula": "M1", "cargo": "Mec", "area": "A"})
+    monkeypatch.setattr(repo, "list_repo", lambda *a, **k: [
+        {"id": "A1", "data": "2026-10-08", "os_id": "O1", "horas": 5.0, "horas_normais": 5.0, "horas_extras": 0.0,
+         "ordens_servico": {"codigo": "100", "descricao": "Manutencao"}}])
+    monkeypatch.setattr(repo, "carga_prevista", lambda *a, **k: 9.0)
+    r = admin_client.get("/apropriacoes/consulta?funcionario_id=F&de=2026-10-01&ate=2026-10-08")
+    assert r.status_code == 200, r.text
+    assert r.json()["resumo"]["dias_incompletos"] == 1
+
+
 def test_lote_os_ok_e_teto_por_funcionario(monkeypatch, admin_client):
     from app.modules.apropriacoes import service
 
     monkeypatch.setattr(repo, "get_os", lambda oid: {"id": oid})
     monkeypatch.setattr(repo, "get_funcionario", lambda fid: {"id": fid, "ativo": True, "desligamento": None})
     monkeypatch.setattr(repo, "total_dia", lambda fid, *a, **k: 23.0 if fid == "F2" else 0)
-    monkeypatch.setattr(repo, "upsert_repo", lambda p: p)
+    monkeypatch.setattr(repo, "exists_repo", lambda *a, **k: None)
+    monkeypatch.setattr(repo, "create_repo", lambda p: {"id": "A9", **p})
+    monkeypatch.setattr(repo, "get_repo", lambda aid: {"id": aid})
+    monkeypatch.setattr(service, "distribuir", lambda *a, **k: {})
     out = service.registrar_lote_os("2026-10-08", "O1", [
         type("I", (), {"funcionario_id": "F1", "horas": 8.0})(),
         type("I", (), {"funcionario_id": "F2", "horas": 2.0})(),

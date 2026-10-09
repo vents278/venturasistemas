@@ -3,36 +3,92 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Apropriação — ERP</title>
+  <title>Apropriações — ERP</title>
   <link rel="stylesheet" href="css/base.css" />
   <style>
-    table { width:100%; border-collapse:collapse; } th,td { border-bottom:1px solid #e2e8f0; padding:8px; font-size:.9rem; text-align:left; }
-    .bar { display:flex; gap:8px; margin:12px 0; flex-wrap:wrap; }
-    #saldo { font-weight:bold; margin:8px 0; }
+    section.bloco { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 14px 0; box-shadow: var(--shadow); }
+    section.bloco h2 { margin: 0 0 10px; font-size: 1.05rem; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .res { border-bottom: 1px solid var(--line); padding: 8px 4px; cursor: pointer; }
+    .res:hover { background: #f8fafc; }
+    .res small { color: var(--muted); }
+    .addrow { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .addrow input[type="number"] { width: 90px; }
+    .cards { display: flex; gap: 10px; flex-wrap: wrap; }
+    .kpi { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+    .kpi b { font-size: 1.3rem; display: block; }
+    table.mini { box-shadow: none; }
+    @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <aside id="sidebar"></aside>
   <main>
-    <header id="topbar"><h1>Apropriação</h1><a href="index.html">← Início</a></header>
-    <div class="bar">
-      <input id="data" type="date" />
-      <select id="func"></select>
-      <button onclick="carregar()">Carregar</button>
-      <button onclick="salvar()">Salvar dia</button>
-    </div>
-    <div id="saldo"></div>
-    <table><thead><tr><th>OS</th><th>Horas</th></tr></thead><tbody id="tb"></tbody></table>
-    <h2 style="margin-top:24px">Em massa por ordem</h2>
-    <p style="color:var(--muted)">Uma ordem distribuída em vários funcionários de uma vez. Reflete na grade de presença.</p>
-    <div class="bar">
-      <input id="data2" type="date" />
-      <select id="os2"></select>
-      <button onclick="carregarMassa()">Carregar</button>
-      <button onclick="salvarMassa()" class="btn-primary">Salvar massa</button>
-    </div>
-    <div id="totalMassa"></div>
-    <table><thead><tr><th>Funcionário</th><th>Horas na ordem</th></tr></thead><tbody id="tb2"></tbody></table>
+    <header id="topbar"><h1>Apropriações e Ordens de Serviço</h1></header>
+
+    <section class="bloco" id="s-os">
+      <h2>1 · Ordens de serviço</h2>
+      <div class="grid2">
+        <div>
+          <h3 style="font-size:.9rem">Nova ordem</h3>
+          <div class="bar">
+            <input id="os_num" placeholder="número *" />
+            <input id="os_desc" placeholder="descrição da atividade" style="flex:1" />
+            <input id="os_data" type="date" title="data de execução" />
+            <button onclick="criarOS()" class="btn-primary">Cadastrar</button>
+          </div>
+          <h3 style="font-size:.9rem">Pesquisar</h3>
+          <div class="bar"><input id="os_q" placeholder="número ou descrição..." oninput="debounceOS()" style="flex:1" /></div>
+          <div id="os_lista"></div>
+        </div>
+        <div>
+          <h3 style="font-size:.9rem">Detalhe da ordem</h3>
+          <div class="bar">
+            <input id="os_de" type="date" /> <input id="os_ate" type="date" />
+            <button onclick="detalheOS()">Filtrar período</button>
+          </div>
+          <div id="os_det">Selecione uma ordem ao lado.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bloco" id="s-aprop">
+      <h2>2 · Apropriar funcionários na ordem</h2>
+      <div class="bar">
+        <input id="ap_data" type="date" />
+        <select id="ap_os"><option value="">ordem...</option></select>
+      </div>
+      <div class="bar">
+        <input id="ap_q" placeholder="Pesquisar funcionário por nome ou matrícula" oninput="debounceFunc()" style="flex:1" />
+      </div>
+      <div id="func_res"></div>
+      <h3 style="font-size:.9rem">Adicionados</h3>
+      <div id="adicionados"></div>
+      <div id="previa"></div>
+      <div class="bar"><button onclick="salvarApropriacao()" class="btn-primary">Salvar apropriações</button></div>
+    </section>
+
+    <section class="bloco" id="s-func">
+      <h2>3 · Consultar apropriações do funcionário</h2>
+      <div class="bar">
+        <input id="cf_q" placeholder="nome ou matrícula" oninput="debounceCFunc()" style="flex:1" />
+      </div>
+      <div id="cf_res"></div>
+      <div class="bar">
+        <input id="cf_de" type="date" /> <input id="cf_ate" type="date" />
+        <input id="cf_os" placeholder="nº OS (opcional)" />
+        <label><input id="cf_extras" type="checkbox" style="width:auto" /> só extras</label>
+        <button onclick="consultaFunc()">Consultar</button>
+      </div>
+      <div id="cf_dados"></div>
+      <div id="cf_table"></div>
+    </section>
+
+    <section class="bloco" id="s-ind">
+      <h2>4 · Indicadores</h2>
+      <div class="bar"><input id="in_de" type="date" /> <input id="in_ate" type="date" /> <button onclick="indicadores()">Calcular</button></div>
+      <div class="cards" id="kpis"></div>
+    </section>
   </main>
   <script src="js/api.js"></script>
   <script src="js/layout.js"></script>

@@ -32,6 +32,7 @@ def test_enviado_nao_recria(monkeypatch):
 def test_pendente_atualiza_sem_duplicar(monkeypatch):
     monkeypatch.setattr(em_repo, "find_por_he", lambda hid: {"id": "E1", "status": "PENDENTE"})
     monkeypatch.setattr(service, "_funcionario", lambda fid: {"nome": "Joao", "matricula": "M1"})
+    monkeypatch.setattr(service, "_ordens_do_dia", lambda *a, **k: "100")
     monkeypatch.setattr(em_repo, "update_repo", lambda eid, p: {"id": eid, **p})
     monkeypatch.setattr(em_repo, "create_repo", lambda p: (_ for _ in ()).throw(AssertionError("não deve criar")))
     out = service.garantir_para_he(_he())

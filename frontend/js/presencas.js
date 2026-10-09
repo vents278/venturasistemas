@@ -68,40 +68,83 @@ async function abrirDia(fid, data) {
   f_jornada_dia.innerHTML = '<option value="">padrão do funcionário</option>' + JORNADAS.map((j) => `<option value="${j.id}" ${c.jornada_id === j.id ? "selected" : ""}>${j.codigo}</option>`).join("");
   f_obs.value = c.obs || "";
   linhas.innerHTML = "";
-  (c.apropriacoes || []).forEach((a) => addLinha(a.os_id, a.horas));
+  os_res.innerHTML = "";
+  (c.apropriacoes || []).forEach((a) => addLinha(a.os_id, a.horas, a.id, a.normal, a.extra));
   if (!c.apropriacoes || !c.apropriacoes.length) addLinha();
   await atualizarSaldo();
   modal.style.display = "block";
 }
 function fecharModal() { modal.style.display = "none"; }
 
-function addLinha(osId, horas) {
+function addLinha(osId, horas, apId, normal, extra) {
   const div = document.createElement("div");
   div.className = "lrow";
+  if (apId) div.dataset.apid = apId;
+  const split = (normal !== undefined) ? `<small>${normal}N+${extra}E</small>` : "";
   div.innerHTML = `<select>${OSS.map((o) => `<option value="${o.id}" ${o.id === osId ? "selected" : ""}>${o.codigo}</option>`).join("")}</select>
     <input type="number" min="0" max="24" step="0.5" placeholder="h" value="${horas || ""}" />
+    ${split}
     <button type="button" onclick="this.parentElement.remove();atualizarSaldo()">✕</button>`;
   div.querySelector("input").oninput = atualizarSaldo;
   linhas.appendChild(div);
 }
+async function buscarOSGrade() {
+  const q = os_busca.value.trim();
+  if (q.length < 2) return;
+  const list = await api("/os?q=" + encodeURIComponent(q));
+  os_res.innerHTML = list.slice(0, 8).map((o) => `<div class="res"><strong>${o.codigo}</strong> <small>${o.descricao || ""}</small>
+    <button type="button" onclick='usarOSGrade(${JSON.stringify(o.id)})'>Usar</button></div>`).join("") || "Nenhuma OS.";
+}
+async function novaOSGrade() {
+  const codigo = prompt("Número da nova OS:");
+  if (!codigo || !codigo.trim()) return;
+  const descricao = prompt("Descrição da atividade:") || null;
+  try {
+    const o = await api("/os", { method: "POST", body: JSON.stringify({ codigo, descricao }) });
+    OSS.push(o); addLinha(o.id, ""); os_res.innerHTML = "";
+  } catch (e) { alert(e.message); }
+}
+function usarOSGrade(id) { addLinha(id, ""); os_res.innerHTML = ""; atualizarSaldo(); }
 function lerLinhas() {
   return [...linhas.querySelectorAll(".lrow")].map((r) => ({
+    apid: r.dataset.apid || null,
     os_id: r.querySelector("select").value, horas: parseFloat(r.querySelector("input").value) || 0,
   })).filter((x) => x.horas > 0);
 }
 async function atualizarSaldo() {
   try {
     const s = await api(`/apropriacoes/saldo?funcionario_id=${CEL.fid}&data=${CEL.data}`);
-    const t = lerLinhas().reduce((a, x) => a + x.horas, 0);
-    saldo.textContent = `Carga: ${s.carga_prevista}h | Lançado: ${s.total_apropriado}h | Nesta edição: ${t}h`;
+    const editadas = lerLinhas();
+    const t = editadas.reduce((a, x) => a + x.horas, 0);
+    const norm = Math.min(t, s.carga_prevista), ext = +(t - norm).toFixed(2);
+    he_flag.checked = ext > 0;
+    saldo.textContent = `Carga: ${s.carga_prevista}h | Lançado: ${s.total_apropriado}h | Nesta edição: ${t}h → normal ${norm}h, extra ${ext}h`;
+    saldo.dataset.extras = ext;
   } catch { saldo.textContent = ""; }
 }
 
 form.onsubmit = async (e) => {
   e.preventDefault();
+  if (parseFloat(saldo.dataset.extras || 0) > 0 && !confirm("Esta edição gera horas extras. Confirmar?")) return;
   await api("/presencas", { method: "POST", body: JSON.stringify({ funcionario_id: CEL.fid, data: CEL.data, status_codigo: f_status.value, jornada_id: f_jornada_dia.value || null, obs: f_obs.value || null }) });
-  const itens = lerLinhas();
-  if (itens.length) await api("/apropriacoes/lote", { method: "POST", body: JSON.stringify({ funcionario_id: CEL.fid, data: CEL.data, itens }) });
+  const lin = GRADE.linhas.find((l) => l.funcionario.id === CEL.fid);
+  const antes = (lin.dias[CEL.data] && lin.dias[CEL.data].apropriacoes) || [];
+  const agora = lerLinhas();
+  const erros = [];
+  for (const a of antes.filter((x) => !agora.find((y) => y.apid === x.id))) {
+    await api("/apropriacoes/" + a.id, { method: "DELETE" }).catch((err) => erros.push(err.message));
+  }
+  for (const y of agora) {
+    const orig = antes.find((x) => x.id === y.apid);
+    try {
+      if (orig && Math.abs(orig.horas - y.horas) > 0.001) {
+        await api("/apropriacoes/" + y.apid, { method: "PATCH", body: JSON.stringify({ horas: y.horas }) });
+      } else if (!orig) {
+        await api("/apropriacoes", { method: "POST", body: JSON.stringify({ funcionario_id: CEL.fid, data: CEL.data, os_id: y.os_id, horas: y.horas }) });
+      }
+    } catch (err) { erros.push(err.message); }
+  }
+  if (erros.length) alert("Avisos:\n" + erros.join("\n"));
   fecharModal(); carregar();
 };
 

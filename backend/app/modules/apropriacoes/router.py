@@ -32,6 +32,18 @@ def listar(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.get("/consulta")
+def consulta(funcionario_id: str, de: str | None = None, ate: str | None = None,
+             os_codigo: str | None = None, so_extras: bool = False,
+             _: dict = Depends(get_current_user)):
+    try:
+        return service.consulta_funcionario(funcionario_id, de, ate, os_codigo, so_extras)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.get("/{ap_id}")
 def detalhar(ap_id: str, _: dict = Depends(get_current_user)):
     from app.modules.apropriacoes import repository as repo
@@ -43,9 +55,9 @@ def detalhar(ap_id: str, _: dict = Depends(get_current_user)):
 
 
 @router.post("", status_code=201)
-def registrar(body: ApropriacaoIn, _: dict = Depends(require_gestor)):
+def registrar(body: ApropriacaoIn, user: dict = Depends(require_gestor)):
     try:
-        return service.registrar(body)
+        return service.registrar(body, user.get("id"))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:
@@ -53,9 +65,9 @@ def registrar(body: ApropriacaoIn, _: dict = Depends(require_gestor)):
 
 
 @router.post("/lote", status_code=201)
-def registrar_lote(body: ApropriacaoLoteIn, _: dict = Depends(require_gestor)):
+def registrar_lote(body: ApropriacaoLoteIn, user: dict = Depends(require_gestor)):
     try:
-        return service.registrar_lote(str(body.funcionario_id), str(body.data), body.itens)
+        return service.registrar_lote(str(body.funcionario_id), str(body.data), body.itens, user.get("id"))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:
@@ -63,9 +75,9 @@ def registrar_lote(body: ApropriacaoLoteIn, _: dict = Depends(require_gestor)):
 
 
 @router.post("/lote-os", status_code=201)
-def registrar_lote_os(body: ApropriacaoLoteOSIn, _: dict = Depends(require_gestor)):
+def registrar_lote_os(body: ApropriacaoLoteOSIn, user: dict = Depends(require_gestor)):
     try:
-        return service.registrar_lote_os(str(body.data), str(body.os_id), body.itens)
+        return service.registrar_lote_os(str(body.data), str(body.os_id), body.itens, user.get("id"))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:

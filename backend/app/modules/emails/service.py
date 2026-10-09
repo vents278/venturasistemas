@@ -32,14 +32,25 @@ def _funcionario(fid: str) -> dict:
     return r.data[0] if r.data else {"nome": fid, "matricula": "-"}
 
 
-def _texto(he: dict, func: dict) -> tuple[str, str]:
+def _texto(he: dict, func: dict, ordens: str = "") -> tuple[str, str]:
     assunto = f"HE {he['qtd_horas']}h {he['percentual']}% — {func.get('nome')} ({he['data']})"
     corpo = (
         f"Funcionário: {func.get('nome')} (matrícula {func.get('matricula')})\n"
         f"Data: {he['data']}\nHoras extras: {he['qtd_horas']}h\nAdicional: {he['percentual']}%\n"
+        f"Ordens do dia: {ordens or '-'}\n"
         f"Status: E-MAIL PENDENTE"
     )
     return assunto, corpo
+
+
+def _ordens_do_dia(funcionario_id: str, data_str: str) -> str:
+    from app.modules.apropriacoes import repository as ap_repo
+
+    try:
+        dist = ap_repo.linhas_dia(funcionario_id, data_str)
+        return ", ".join(sorted({((l.get("ordens_servico") or {}).get("codigo") or "?") for l in dist}))
+    except Exception:
+        return ""
 
 
 def garantir_para_he(he: dict) -> dict:
@@ -48,7 +59,8 @@ def garantir_para_he(he: dict) -> dict:
 
     existente = repo.find_por_he(he["id"])
     func = _funcionario(he["funcionario_id"])
-    assunto, corpo = _texto(he, func)
+    ordens = _ordens_do_dia(he["funcionario_id"], he["data"])
+    assunto, corpo = _texto(he, func, ordens)
     if existente and existente["status"] == "ENVIADO":
         return existente
     if existente:
@@ -66,7 +78,7 @@ def garantir_para_he(he: dict) -> dict:
                 "tipo": "EMAIL_HE_PENDENTE",
                 "funcionario_id": he["funcionario_id"],
                 "data_ref": he["data"],
-                "descricao": f"E-mail pendente: HE {he['qtd_horas']}h {he['percentual']}% de {func.get('nome')}",
+                "descricao": f"E-mail pendente: HE {he['qtd_horas']}h {he['percentual']}% de {func.get('nome')} (OS: {ordens or '-'})",
                 "prioridade": "MEDIA",
                 "status": "ABERTA",
                 "origem_regra": "motor_regras.hora_extra",

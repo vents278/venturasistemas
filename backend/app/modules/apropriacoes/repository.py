@@ -28,9 +28,42 @@ def get_repo(ap_id: str):
 
 
 def upsert_repo(payload: dict):
+    """Legado (compat): usado só em fluxos internos idempotentes. Telas usam create_repo."""
     sb = get_supabase()
     r = sb.table("apropriacoes").upsert(payload, on_conflict="funcionario_id,data,os_id").execute()
     return r.data[0]
+
+
+def create_repo(payload: dict):
+    sb = get_supabase()
+    r = sb.table("apropriacoes").insert(payload).execute()
+    return r.data[0]
+
+
+def exists_repo(funcionario_id: str, data_str: str, os_id: str):
+    sb = get_supabase()
+    r = (sb.table("apropriacoes").select("id,horas").eq("funcionario_id", funcionario_id)
+         .eq("data", data_str).eq("os_id", os_id).limit(1).execute())
+    return r.data[0] if r.data else None
+
+
+def linhas_dia(funcionario_id: str, data_str: str):
+    """Linhas do dia em ordem cronológica estável (created_at, id) p/ distribuir normal/extra."""
+    sb = get_supabase()
+    r = (sb.table("apropriacoes").select("*, ordens_servico(codigo,descricao)")
+         .eq("funcionario_id", funcionario_id).eq("data", data_str)
+         .order("created_at").order("id").execute())
+    return r.data or []
+
+
+def por_os(os_id: str, de=None, ate=None):
+    sb = get_supabase()
+    q = (sb.table("apropriacoes").select("*, funcionarios(nome,matricula,cargo)").eq("os_id", os_id))
+    if de:
+        q = q.gte("data", de)
+    if ate:
+        q = q.lte("data", ate)
+    return (q.order("data").execute().data) or []
 
 
 def update_repo(ap_id: str, payload: dict):

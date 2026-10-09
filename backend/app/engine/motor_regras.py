@@ -17,6 +17,7 @@ def _dow(data_ref: str) -> int:
 def avaliar(funcionario_id: str, data_ref: str) -> list:
     from app.modules.apropriacoes import repository as ap_repo
     from app.modules.feriados import repository as fe_repo
+    from app.modules.horas_extras import repository as he_repo
     from app.modules.presencas import repository as pr_repo
 
     achados: list = []
@@ -32,7 +33,7 @@ def avaliar(funcionario_id: str, data_ref: str) -> list:
         if a:
             achados.append(a)
 
-    he = calcular_he(_dow(data_ref), fe_repo.is_feriado(data_ref), carga, total)
+    he = calcular_he(_dow(data_ref), fe_repo.is_feriado(data_ref), carga, total, he_repo.get_percentuais())
     if he:
         achados.append({
             "tipo": "HORA_EXTRA",
