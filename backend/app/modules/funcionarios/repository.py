@@ -31,13 +31,13 @@ def get_repo(func_id: str):
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    r = sb.table("funcionarios").insert(payload).select().execute()
+    r = sb.table("funcionarios").insert(payload).execute()
     return r.data[0]
 
 
 def update_repo(func_id: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("funcionarios").update(payload).eq("id", func_id).select().execute()
+    r = sb.table("funcionarios").update(payload).eq("id", func_id).execute()
     return r.data[0] if r.data else None
 
 

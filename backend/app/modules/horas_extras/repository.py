@@ -27,7 +27,6 @@ def upsert_repo(funcionario_id: str, data_str: str, qtd: float, percentual: int)
             {"funcionario_id": funcionario_id, "data": data_str, "qtd_horas": qtd, "percentual": percentual},
             on_conflict="funcionario_id,data,percentual",
         )
-        .select()
         .execute()
     )
     return r.data[0]

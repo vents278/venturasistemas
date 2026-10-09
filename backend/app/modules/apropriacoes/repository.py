@@ -29,13 +29,13 @@ def get_repo(ap_id: str):
 
 def upsert_repo(payload: dict):
     sb = get_supabase()
-    r = sb.table("apropriacoes").upsert(payload, on_conflict="funcionario_id,data,os_id").select().execute()
+    r = sb.table("apropriacoes").upsert(payload, on_conflict="funcionario_id,data,os_id").execute()
     return r.data[0]
 
 
 def update_repo(ap_id: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("apropriacoes").update(payload).eq("id", ap_id).select().execute()
+    r = sb.table("apropriacoes").update(payload).eq("id", ap_id).execute()
     return r.data[0] if r.data else None
 
 

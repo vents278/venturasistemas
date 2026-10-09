@@ -12,7 +12,7 @@ def list_tipos():
 
 def create_tipo(payload: dict):
     sb = get_supabase()
-    return sb.table("tipos_ausencia").insert(payload).select().execute().data[0]
+    return sb.table("tipos_ausencia").insert(payload).execute().data[0]
 
 
 def count_uso_tipo(tipo_id: int) -> int:
@@ -51,12 +51,12 @@ def get_repo(aid: str):
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    return sb.table("absenteismo").insert(payload).select().execute().data[0]
+    return sb.table("absenteismo").insert(payload).execute().data[0]
 
 
 def update_repo(aid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("absenteismo").update(payload).eq("id", aid).select().execute()
+    r = sb.table("absenteismo").update(payload).eq("id", aid).execute()
     return r.data[0] if r.data else None
 
 

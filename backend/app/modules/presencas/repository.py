@@ -32,7 +32,6 @@ def upsert_repo(payload: dict):
     r = (
         sb.table("presencas")
         .upsert(payload, on_conflict="funcionario_id,data")
-        .select()
         .execute()
     )
     return r.data[0]
@@ -40,7 +39,7 @@ def upsert_repo(payload: dict):
 
 def update_repo(pid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("presencas").update(payload).eq("id", pid).select().execute()
+    r = sb.table("presencas").update(payload).eq("id", pid).execute()
     return r.data[0] if r.data else None
 
 

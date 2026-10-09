@@ -29,12 +29,12 @@ def find_por_he(he_id: str):
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    return sb.table("emails").insert(payload).select().execute().data[0]
+    return sb.table("emails").insert(payload).execute().data[0]
 
 
 def update_repo(eid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("emails").update(payload).eq("id", eid).select().execute()
+    r = sb.table("emails").update(payload).eq("id", eid).execute()
     return r.data[0] if r.data else None
 
 

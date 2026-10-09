@@ -45,10 +45,10 @@ def list_abertas_por_data(data_ref: str, tipos: list | None = None):
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    return sb.table("pendencias").insert(payload).select().execute().data[0]
+    return sb.table("pendencias").insert(payload).execute().data[0]
 
 
 def update_repo(pid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("pendencias").update(payload).eq("id", pid).select().execute()
+    r = sb.table("pendencias").update(payload).eq("id", pid).execute()
     return r.data[0] if r.data else None

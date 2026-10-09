@@ -19,7 +19,7 @@ def get_repo(data_str: str):
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    return sb.table("feriados").insert(payload).select().execute().data[0]
+    return sb.table("feriados").insert(payload).execute().data[0]
 
 
 def delete_repo(data_str: str):

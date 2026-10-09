@@ -21,12 +21,12 @@ def get_repo(os_id: str):
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    return sb.table("ordens_servico").insert(payload).select().execute().data[0]
+    return sb.table("ordens_servico").insert(payload).execute().data[0]
 
 
 def update_repo(os_id: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("ordens_servico").update(payload).eq("id", os_id).select().execute()
+    r = sb.table("ordens_servico").update(payload).eq("id", os_id).execute()
     return r.data[0] if r.data else None
 
 

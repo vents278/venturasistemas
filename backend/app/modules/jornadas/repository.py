@@ -21,12 +21,12 @@ def get_jornada(jid: str, com_horarios=False):
 
 def create_jornada(payload: dict):
     sb = get_supabase()
-    return sb.table("jornadas").insert(payload).select().execute().data[0]
+    return sb.table("jornadas").insert(payload).execute().data[0]
 
 
 def update_jornada(jid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("jornadas").update(payload).eq("id", jid).select().execute()
+    r = sb.table("jornadas").update(payload).eq("id", jid).execute()
     return r.data[0] if r.data else None
 
 
@@ -49,7 +49,7 @@ def list_horarios(jid: str):
 
 def create_horario(payload: dict):
     sb = get_supabase()
-    return sb.table("jornada_horarios").insert(payload).select().execute().data[0]
+    return sb.table("jornada_horarios").insert(payload).execute().data[0]
 
 
 def get_horario(hid: str):
@@ -60,7 +60,7 @@ def get_horario(hid: str):
 
 def update_horario(hid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("jornada_horarios").update(payload).eq("id", hid).select().execute()
+    r = sb.table("jornada_horarios").update(payload).eq("id", hid).execute()
     return r.data[0] if r.data else None
 
 

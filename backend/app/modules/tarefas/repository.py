@@ -37,12 +37,12 @@ def detalhar_repo(tid: str) -> dict | None:
 
 def create_repo(payload: dict):
     sb = get_supabase()
-    return sb.table("tarefas").insert(payload).select().execute().data[0]
+    return sb.table("tarefas").insert(payload).execute().data[0]
 
 
 def update_repo(tid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("tarefas").update(payload).eq("id", tid).select().execute()
+    r = sb.table("tarefas").update(payload).eq("id", tid).execute()
     return r.data[0] if r.data else None
 
 
@@ -60,12 +60,12 @@ def find_por_pendencia(pid: str):
 # ---- checklists ----
 def add_checklist(tid: str, titulo: str):
     sb = get_supabase()
-    return sb.table("tarefa_checklists").insert({"tarefa_id": tid, "titulo": titulo}).select().execute().data[0]
+    return sb.table("tarefa_checklists").insert({"tarefa_id": tid, "titulo": titulo}).execute().data[0]
 
 
 def update_checklist(cid: str, payload: dict):
     sb = get_supabase()
-    r = sb.table("tarefa_checklists").update(payload).eq("id", cid).select().execute()
+    r = sb.table("tarefa_checklists").update(payload).eq("id", cid).execute()
     return r.data[0] if r.data else None
 
 
@@ -80,7 +80,7 @@ def add_comentario(tid: str, autor_id: str | None, texto: str):
     payload = {"tarefa_id": tid, "texto": texto}
     if autor_id:
         payload["autor_id"] = autor_id
-    return sb.table("tarefa_comentarios").insert(payload).select().execute().data[0]
+    return sb.table("tarefa_comentarios").insert(payload).execute().data[0]
 
 
 def delete_comentario(mid: str):
@@ -91,7 +91,7 @@ def delete_comentario(mid: str):
 # ---- anexos (URL; upload real via Storage entra em Documentos) ----
 def add_anexo(tid: str, arquivo_url: str, nome: str | None):
     sb = get_supabase()
-    return sb.table("tarefa_anexos").insert({"tarefa_id": tid, "arquivo_url": arquivo_url, "nome": nome}).select().execute().data[0]
+    return sb.table("tarefa_anexos").insert({"tarefa_id": tid, "arquivo_url": arquivo_url, "nome": nome}).execute().data[0]
 
 
 def delete_anexo(aid: str):
