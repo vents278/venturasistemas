@@ -17,7 +17,13 @@ def _anon_client():
 
 def login_supabase(email: str, senha: str) -> dict:
     sb = _anon_client()
-    res = sb.auth.sign_in_with_password({"email": email, "password": senha})
+    try:
+        res = sb.auth.sign_in_with_password({"email": email, "password": senha})
+    except Exception as exc:
+        msg = str(exc)
+        if "confirm" in msg.lower():
+            raise ValueError("E-mail não confirmado — fale com o administrador")
+        raise ValueError("Login inválido")
     if not res.session:
         raise ValueError("Login inválido")
     return {

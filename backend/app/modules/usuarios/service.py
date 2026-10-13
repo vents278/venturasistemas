@@ -22,15 +22,17 @@ def criar(body) -> dict:
     if body.perfil not in ("ADMIN", "GESTOR", "OPERADOR"):
         raise ValueError("Perfil inválido")
     mods = [m for m in (body.modulos or []) if m in MODULOS]
-    sb_anon = _anon_client()
+    sb = get_supabase()
     try:
-        created = sb_anon.auth.sign_up({"email": str(body.email), "password": body.senha})
+        created = sb.auth.admin.create_user({
+            "email": str(body.email), "password": body.senha,
+            "email_confirm": True, "user_metadata": {"nome": body.nome.strip()},
+        })
     except Exception as exc:
         raise ValueError(f"Auth recusou o cadastro: {exc}")
     if not created.user:
         raise ValueError("Auth não retornou usuário")
     uid = str(created.user.id)
-    sb = get_supabase()
     perfil = sb.table("perfis_usuario").select("id").eq("nome", body.perfil).limit(1).execute()
     sb.table("usuarios").upsert(
         {"id": uid, "email": str(body.email), "nome": body.nome.strip(), "perfil_id": perfil.data[0]["id"]},
