@@ -117,7 +117,11 @@ def test_lote_os_ok_e_teto_por_funcionario(monkeypatch, admin_client):
     assert r.status_code == 201, r.text
 
 
-def test_lote_os_404_quando_os_inexistente(admin_client):
+def test_lote_os_404_quando_os_inexistente(admin_client, monkeypatch):
+    from app.modules.apropriacoes import repository as _repo
+
+    monkeypatch.setattr(_repo, "get_funcionario", lambda fid: {"id": fid})
+    monkeypatch.setattr(_repo, "get_os", lambda oid: None)
     r = admin_client.post("/apropriacoes/lote-os", json={
         "data": "2026-10-08", "os_id": "00000000-0000-0000-0000-000000000099",
         "itens": [{"funcionario_id": "00000000-0000-0000-0000-000000000001", "horas": 8}],

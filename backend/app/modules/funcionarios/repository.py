@@ -5,7 +5,7 @@ from app.core.supabase_client import get_supabase
 SELECT = "*, jornadas(codigo,nome)"
 
 
-def list_repo(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20):
+def list_repo(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20, empresa_id=None, escopo=None):
     sb = get_supabase()
     query = sb.table("funcionarios").select(SELECT, count="exact")
     if q:
@@ -18,6 +18,10 @@ def list_repo(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1
         query = query.eq("area", area)
     if jornada_id:
         query = query.eq("jornada_id", jornada_id)
+    if empresa_id:
+        query = query.eq("empresa_id", empresa_id)
+    elif escopo is not None:
+        query = query.or_(f"empresa_id.in.({','.join(escopo)}),empresa_id.is.null")
     start = (page - 1) * limit
     res = query.order("nome").range(start, start + limit - 1).execute()
     return {"items": res.data or [], "total": res.count or 0}
@@ -53,11 +57,11 @@ def exists_matricula(matricula: str) -> bool:
 
 def list_ativos_full():
     sb = get_supabase()
-    r = sb.table("funcionarios").select("id,matricula,nome,cargo,area,setor,supervisor_id,jornada_id,ativo,em_treinamento,desligamento").eq("ativo", True).order("nome").execute()
+    r = sb.table("funcionarios").select("id,matricula,nome,cargo,area,setor,supervisor_id,jornada_id,ativo,em_treinamento,desligamento,empresa_id").eq("ativo", True).order("nome").execute()
     return r.data or []
 
 
 def list_treinamento():
     sb = get_supabase()
-    r = sb.table("funcionarios").select("id,matricula,nome,cargo,area,setor,supervisor_id,jornada_id,ativo,em_treinamento,desligamento").eq("em_treinamento", True).order("nome").execute()
+    r = sb.table("funcionarios").select("id,matricula,nome,cargo,area,setor,supervisor_id,jornada_id,ativo,em_treinamento,desligamento,empresa_id").eq("em_treinamento", True).order("nome").execute()
     return r.data or []

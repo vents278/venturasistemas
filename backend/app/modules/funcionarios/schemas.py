@@ -11,6 +11,7 @@ class FuncionarioIn(BaseModel):
     cargo: str | None = None
     area: str | None = None
     supervisor_id: UUID | None = None
+    empresa_id: UUID | None = None
     matricula: str | None = None
     admissao: date = Field(default_factory=date.today)
     setor: str | None = None
@@ -40,6 +41,7 @@ class FuncionarioUpdate(BaseModel):
     cargo: str | None = None
     area: str | None = None
     supervisor_id: UUID | None = None
+    empresa_id: UUID | None = None
     matricula: str | None = None
     admissao: date | None = None
     setor: str | None = None
@@ -58,6 +60,7 @@ class FuncionarioOut(BaseModel):
     area: str | None = None
     setor: str | None = None
     supervisor_id: str | None = None
+    empresa_id: str | None = None
     admissao: date
     desligamento: date | None = None
     ativo: bool

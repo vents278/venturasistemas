@@ -36,6 +36,9 @@ def test_snapshot_usa_jornada_do_funcionario(monkeypatch):
 
 
 def test_lote_wiring(admin_client, monkeypatch):
+    from app.modules.presencas import repository as pr_repo
+
+    monkeypatch.setattr(pr_repo, "get_funcionario", lambda fid: {"id": fid})
     monkeypatch.setattr(service, "registrar_lote", lambda *a, **k: {"data": "2026-10-08", "ok": 2, "erros": []})
     r = admin_client.post("/presencas/lote", json={"data": "2026-10-08", "itens": [
         {"funcionario_id": "00000000-0000-0000-0000-000000000001", "status_codigo": "PRESENTE"},

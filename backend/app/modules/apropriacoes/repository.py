@@ -92,7 +92,7 @@ def carga_prevista(funcionario_id: str, data_str: str) -> float:
 
 def get_funcionario(func_id: str):
     sb = get_supabase()
-    r = sb.table("funcionarios").select("id,ativo,desligamento").eq("id", func_id).limit(1).execute()
+    r = sb.table("funcionarios").select("id,ativo,desligamento,empresa_id").eq("id", func_id).limit(1).execute()
     return r.data[0] if r.data else None
 
 

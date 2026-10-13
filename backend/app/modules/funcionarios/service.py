@@ -11,7 +11,7 @@ def validar_datas(admissao, desligamento) -> None:
 
 def _payload(body) -> dict:
     d = body.model_dump(exclude_unset=True)
-    for k in ("jornada_id", "supervisor_id"):
+    for k in ("jornada_id", "supervisor_id", "empresa_id"):
         if d.get(k) is not None:
             d[k] = str(d[k])
     if d.get("admissao") is not None:
@@ -31,8 +31,8 @@ def _gerar_matricula() -> str:
     raise ValueError("Não foi possível gerar matrícula única")
 
 
-def listar(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20):
-    return repo.list_repo(q, ativo, setor, area, jornada_id, page, limit)
+def listar(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20, empresa_id=None, escopo=None):
+    return repo.list_repo(q, ativo, setor, area, jornada_id, page, limit, empresa_id, escopo)
 
 
 def detalhar(func_id: str) -> dict:

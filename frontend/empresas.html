@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Empresas — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Empresas</h1></header>
+    <div class="bar">
+      <input id="nome" placeholder="nome da empresa *" style="flex:1" />
+      <input id="cnpj" placeholder="CNPJ" />
+      <button onclick="criar()" class="btn-primary">Cadastrar</button>
+      <button onclick="carregar()">Atualizar</button>
+    </div>
+    <table><thead><tr><th>Nome</th><th>CNPJ</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function api(path, opts = {}) {
+      const h = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      const t = sessionStorage.getItem("erp_token");
+      if (t) h.Authorization = "Bearer " + t;
+      const r = await fetch(API_BASE + path, { ...opts, headers: h });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (r.status === 403) throw new Error("Sem permissão (ADMIN).");
+      if (!r.ok) throw new Error(await r.text());
+      return r.status === 204 ? null : r.json();
+    }
+    async function carregar() {
+      const d = await api("/empresas").catch((e) => { tb.innerHTML = `<tr><td colspan="4">${e.message}</td></tr>`; return null; });
+      if (!d) return;
+      tb.innerHTML = d.map((e) => `<tr><td>${e.nome}</td><td>${e.cnpj || "-"}</td>
+        <td>${e.ativo ? '<span class="on">ativa</span>' : '<span class="off">inativa</span>'}</td>
+        <td><button onclick="excluir('${e.id}')">Excluir</button></td></tr>`).join("") || '<tr><td colspan="4">Nenhuma empresa.</td></tr>';
+    }
+    async function criar() {
+      if (!nome.value.trim()) return alert("Nome obrigatório.");
+      await api("/empresas", { method: "POST", body: JSON.stringify({ nome: nome.value, cnpj: cnpj.value || null }) });
+      nome.value = ""; cnpj.value = ""; carregar();
+    }
+    async function excluir(id) {
+      if (!confirm("Excluir empresa?")) return;
+      try { await api("/empresas/" + id, { method: "DELETE" }); } catch (e) { return alert(e.message); }
+      carregar();
+    }
+    carregar();
+  </script>
+</body>
+</html>

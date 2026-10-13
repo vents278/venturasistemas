@@ -26,10 +26,36 @@ def get_current_user(
 
     vinc = buscar_usuario(user_id)
     if vinc is None:
-        return {"id": user_id, "email": email, "nome": None, "perfil": None, "ativo": True}
+        return {"id": user_id, "email": email, "nome": None, "perfil": None, "ativo": True,
+                "empresas": [], "modulos": []}
     if not vinc.get("ativo", True):
         raise HTTPException(status_code=403, detail="Usuário inativo")
-    return vinc
+    from app.core.supabase_client import get_supabase
+    from app.shared.acesso import acessos_usuario
+
+    return {**vinc, **acessos_usuario(get_supabase(), user_id)}
+
+
+def require_modulo(modulo: str):
+    from app.shared.acesso import pode_modulo
+
+    def _check(user: dict = Depends(get_current_user)) -> dict:
+        if not pode_modulo(user, modulo):
+            raise HTTPException(status_code=403, detail="Sem acesso a este módulo")
+        return user
+
+    return _check
+
+
+def empresa_ctx(empresa_id: str | None = None, user: dict = Depends(get_current_user)) -> str | None:
+    """Empresa selecionada (query ?empresa_id=), validada contra os acessos."""
+    if not empresa_id:
+        return None
+    from app.shared.acesso import empresa_no_escopo
+
+    if not empresa_no_escopo(user, empresa_id):
+        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa")
+    return empresa_id
 
 
 def require_perfil(*perfis: str):

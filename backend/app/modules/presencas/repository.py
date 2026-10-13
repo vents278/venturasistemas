@@ -63,7 +63,7 @@ def get_funcionario(func_id: str):
     sb = get_supabase()
     r = (
         sb.table("funcionarios")
-        .select("id,ativo,desligamento,jornada_id")
+        .select("id,ativo,desligamento,jornada_id,empresa_id")
         .eq("id", func_id)
         .limit(1)
         .execute()

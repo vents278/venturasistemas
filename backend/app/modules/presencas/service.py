@@ -55,7 +55,7 @@ def registrar_lote(data_str: str, itens: list) -> dict:
     return {"data": data_str, "ok": ok, "erros": erros}
 
 
-def lancamento_diario(data_str: str, status_padrao: str = "PRESENTE") -> dict:
+def lancamento_diario(data_str: str, status_padrao: str = "PRESENTE", empresa_id: str | None = None) -> dict:
     """Rotina diária: quem está em treinamento ganha TREINAMENTO;
     demais ativos sem lançamento ganham o status padrão (base p/ ajustes e pendências)."""
     from app.modules.funcionarios import repository as fn_repo
@@ -65,7 +65,9 @@ def lancamento_diario(data_str: str, status_padrao: str = "PRESENTE") -> dict:
     presentes, treinamento, ja_existiam = 0, 0, 0
 
     def _vale(f) -> bool:
-        return not (f.get("desligamento") and data_str > str(f["desligamento"]))
+        if f.get("desligamento") and data_str > str(f["desligamento"]):
+            return False
+        return not empresa_id or not f.get("empresa_id") or str(f["empresa_id"]) == empresa_id
 
     for f in fn_repo.list_treinamento():
         if not _vale(f):
@@ -114,7 +116,8 @@ def excluir(pid: str, usuario_id: str | None = None) -> None:
 
 
 def montar_grade(de: str, ate: str, setor: str | None = None, q: str | None = None,
-                 area: str | None = None, supervisor_id: str | None = None) -> dict:
+                 area: str | None = None, supervisor_id: str | None = None,
+                 empresa_id: str | None = None) -> dict:
     """Grade presença × dias: cada célula traz status, obs e apropriações do dia."""
     from datetime import date as _date
     from datetime import timedelta
@@ -129,7 +132,7 @@ def montar_grade(de: str, ate: str, setor: str | None = None, q: str | None = No
     if len(dias) > 62:
         raise ValueError("Período máximo de 62 dias")
 
-    nomes = _base_funcionarios(fn_repo, q, area, setor, supervisor_id)
+    nomes = _base_funcionarios(fn_repo, q, area, setor, supervisor_id, empresa_id)
     pres = repo.list_repo(None, de, ate, None, None)
     aprs = ap_repo.list_repo(None, de, ate, None, None)
 
@@ -164,7 +167,7 @@ def montar_grade(de: str, ate: str, setor: str | None = None, q: str | None = No
     return {"de": de, "ate": ate, "dias": dias, "linhas": linhas}
 
 
-def _base_funcionarios(fn_repo, q, area, setor, supervisor_id) -> dict:
+def _base_funcionarios(fn_repo, q, area, setor, supervisor_id, empresa_id=None) -> dict:
     """Base = ativos (com filtros) + quem tem lançamento no período."""
     from app.core.supabase_client import get_supabase
 
@@ -182,6 +185,8 @@ def _base_funcionarios(fn_repo, q, area, setor, supervisor_id) -> dict:
         if area and (r.get("area") or "") != area:
             continue
         if supervisor_id and str(r.get("supervisor_id") or "") != supervisor_id:
+            continue
+        if empresa_id and r.get("empresa_id") and str(r["empresa_id"]) != empresa_id:
             continue
         if q and q.lower() not in f"{r.get('nome', '')} {r.get('matricula', '')}".lower():
             continue

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.modules.auth.dependencies import get_current_user, require_gestor
+from app.modules.auth.dependencies import empresa_ctx, get_current_user, require_gestor
 from app.modules.funcionarios import service
 from app.modules.funcionarios.schemas import FuncionarioIn, FuncionarioOut, FuncionarioUpdate
 
@@ -31,10 +31,12 @@ def listar(
     jornada_id: str | None = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
+    empresa: str | None = Depends(empresa_ctx),
 ):
     try:
-        data = service.listar(q, ativo, setor, area, jornada_id, page, limit)
+        escopo = None if user.get("perfil") == "ADMIN" else (user.get("empresas") or None)
+        data = service.listar(q, ativo, setor, area, jornada_id, page, limit, empresa, escopo)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
     return {"items": [_to_out(r) for r in data["items"]], "total": data["total"], "page": page}
@@ -57,7 +59,17 @@ def detalhar(func_id: str, _: dict = Depends(get_current_user)):
 
 
 @router.post("", response_model=FuncionarioOut, status_code=201)
-def criar(body: FuncionarioIn, user: dict = Depends(require_gestor)):
+def criar(body: FuncionarioIn, user: dict = Depends(require_gestor),
+          empresa: str | None = Depends(empresa_ctx)):
+    from app.shared.acesso import empresa_no_escopo
+
+    emp = str(body.empresa_id) if body.empresa_id else empresa
+    if not emp and user.get("perfil") != "ADMIN" and len(user.get("empresas") or []) == 1:
+        emp = user["empresas"][0]
+    if emp and not empresa_no_escopo(user, emp):
+        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa")
+    if emp:
+        body.empresa_id = emp  # type: ignore
     try:
         return _to_out(service.criar(body, user.get("id")))
     except ValueError as exc:
@@ -66,6 +78,13 @@ def criar(body: FuncionarioIn, user: dict = Depends(require_gestor)):
 
 @router.patch("/{func_id}", response_model=FuncionarioOut)
 def atualizar(func_id: str, body: FuncionarioUpdate, user: dict = Depends(require_gestor)):
+    from app.shared.acesso import empresa_no_escopo
+
+    atual = service.repo.get_repo(func_id)
+    if atual and atual.get("empresa_id") and not empresa_no_escopo(user, None, str(atual["empresa_id"])):
+        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa")
+    if body.empresa_id and not empresa_no_escopo(user, str(body.empresa_id)):
+        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa")
     try:
         return _to_out(service.atualizar(func_id, body, user.get("id")))
     except KeyError as exc:
@@ -77,6 +96,11 @@ def atualizar(func_id: str, body: FuncionarioUpdate, user: dict = Depends(requir
 @router.delete("/{func_id}", response_model=FuncionarioOut)
 def inativar(func_id: str, user: dict = Depends(require_gestor)):
     """Exclusão lógica: ativo=false (preserva histórico de presença/apropriação)."""
+    from app.shared.acesso import empresa_no_escopo
+
+    atual = service.repo.get_repo(func_id)
+    if atual and atual.get("empresa_id") and not empresa_no_escopo(user, None, str(atual["empresa_id"])):
+        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa")
     try:
         return _to_out(service.inativar(func_id, user.get("id")))
     except KeyError as exc:

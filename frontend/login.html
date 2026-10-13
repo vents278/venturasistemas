@@ -24,7 +24,7 @@
       e.preventDefault();
       try {
         await Auth.login(email.value, senha.value);
-        location.href = "dashboard.html";
+        location.href = "selecionar-empresa.html";
       } catch (err) { document.getElementById("err").textContent = err.message; }
     };
   </script>

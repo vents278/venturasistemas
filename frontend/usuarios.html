@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Usuários — ERP</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <style>
+    .chkgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <aside id="sidebar"></aside>
+  <main>
+    <header id="topbar"><h1>Usuários e acessos</h1></header>
+    <section class="bloco" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px">
+      <h2 style="margin-top:0">Novo usuário</h2>
+      <div class="bar">
+        <input id="u_nome" placeholder="nome *" />
+        <input id="u_email" type="email" placeholder="email *" />
+        <input id="u_senha" type="password" placeholder="senha *" />
+        <select id="u_perfil"><option>OPERADOR</option><option>GESTOR</option><option>ADMIN</option></select>
+        <button onclick="criar()" class="btn-primary">Criar + vincular</button>
+      </div>
+      <div class="chkgrid" id="u_emps"></div>
+      <div class="chkgrid" id="u_mods"></div>
+    </section>
+    <table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Empresas</th><th>Módulos</th><th>Ações</th></tr></thead><tbody id="tb"></tbody></table>
+  </main>
+  <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100">
+    <div style="background:#fff;max-width:520px;margin:5vh auto;padding:16px;border-radius:12px">
+      <h2 id="m_titulo">Acessos</h2>
+      <select id="m_perfil"><option>OPERADOR</option><option>GESTOR</option><option>ADMIN</option></select>
+      <div class="chkgrid" id="m_emps"></div>
+      <div class="chkgrid" id="m_mods"></div>
+      <button onclick="salvarAcessos()" class="btn-primary">Salvar</button>
+      <button onclick="document.getElementById('modal').style.display='none'">Fechar</button>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const MODULOS = ["dashboard","funcionarios","jornadas","presencas","apropriacoes","horas-extras","pendencias","tarefas","emails","absenteismo","relatorios","auditoria","motor","ai","empresas","usuarios"];
+    let EMPS = [], EDIT = null;
+    async function api(path, opts = {}) {
+      const h = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      const t = sessionStorage.getItem("erp_token");
+      if (t) h.Authorization = "Bearer " + t;
+      const r = await fetch(API_BASE + path, { ...opts, headers: h });
+      if (r.status === 401) { location.href = "login.html"; throw new Error("Não autenticado"); }
+      if (r.status === 403) throw new Error("Sem permissão (ADMIN).");
+      if (!r.ok) throw new Error(await r.text());
+      return r.status === 204 ? null : r.json();
+    }
+    const empNome = (id) => (EMPS.find((e) => e.id === id) || {}).nome || id;
+    async function carregar() {
+      EMPS = await api("/empresas").catch(() => []);
+      u_emps.innerHTML = EMPS.map((e) => `<label><input type="checkbox" class="ue" value="${e.id}" style="width:auto" /> ${e.nome}</label>`).join("");
+      u_mods.innerHTML = MODULOS.map((m) => `<label><input type="checkbox" class="um" value="${m}" style="width:auto" /> ${m}</label>`).join("");
+      const users = await api("/usuarios").catch((e) => { tb.innerHTML = `<tr><td colspan="6">${e.message}</td></tr>`; return null; });
+      if (!users) return;
+      tb.innerHTML = users.map((u) => `<tr><td>${u.nome}</td><td>${u.email}</td><td>${u.perfil || "-"}</td>
+        <td>${(u.empresas || []).map(empNome).join(", ") || "<small>todas</small>"}</td>
+        <td>${(u.modulos || []).join(", ") || "<small>todos</small>"}</td>
+        <td><button onclick='editar(${JSON.stringify(u.id)})'>Acessos</button> <button onclick="excluir('${u.id}')">✕</button></td></tr>`).join("");
+      window._users = Object.fromEntries(users.map((u) => [u.id, u]));
+    }
+    async function criar() {
+      const empresas = [...document.querySelectorAll(".ue:checked")].map((c) => c.value);
+      const modulos = [...document.querySelectorAll(".um:checked")].map((c) => c.value);
+      try {
+        await api("/usuarios", { method: "POST", body: JSON.stringify({ nome: u_nome.value, email: u_email.value, senha: u_senha.value, perfil: u_perfil.value, empresas, modulos }) });
+      } catch (e) { return alert(e.message); }
+      u_nome.value = ""; u_email.value = ""; u_senha.value = ""; carregar();
+    }
+    function editar(id) {
+      EDIT = window._users[id];
+      m_titulo.textContent = "Acessos — " + EDIT.nome;
+      m_perfil.value = EDIT.perfil || "OPERADOR";
+      m_emps.innerHTML = EMPS.map((e) => `<label><input type="checkbox" class="me" value="${e.id}" ${EDIT.empresas.includes(e.id) ? "checked" : ""} style="width:auto" /> ${e.nome}</label>`).join("");
+      m_mods.innerHTML = MODULOS.map((m) => `<label><input type="checkbox" class="mm" value="${m}" ${EDIT.modulos.includes(m) ? "checked" : ""} style="width:auto" /> ${m}</label>`).join("");
+      document.getElementById("modal").style.display = "block";
+    }
+    async function salvarAcessos() {
+      const empresas = [...document.querySelectorAll(".me:checked")].map((c) => c.value);
+      const modulos = [...document.querySelectorAll(".mm:checked")].map((c) => c.value);
+      try {
+        await api(`/usuarios/${EDIT.id}/acessos`, { method: "PUT", body: JSON.stringify({ perfil: m_perfil.value, empresas, modulos }) });
+      } catch (e) { return alert(e.message); }
+      document.getElementById("modal").style.display = "none"; carregar();
+    }
+    async function excluir(id) {
+      if (!confirm("Excluir usuário (login + vínculo)?")) return;
+      try { await api("/usuarios/" + id, { method: "DELETE" }); } catch (e) { return alert(e.message); }
+      carregar();
+    }
+    carregar();
+  </script>
+</body>
+</html>

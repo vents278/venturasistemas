@@ -19,6 +19,11 @@ async function carregarJornadas() {
     const f = await api("/funcionarios?ativo=true&limit=100");
     document.getElementById("f_sup").innerHTML =
       '<option value="">supervisor responsável...</option>' + f.items.map((x) => `<option value="${x.id}">${x.nome}</option>`).join("");
+    try {
+      const emps = await api("/empresas");
+      document.getElementById("f_emp").innerHTML =
+        '<option value="">empresa...</option>' + emps.map((x) => `<option value="${x.id}">${x.nome}</option>`).join("");
+    } catch { /* sem acesso a empresas */ }
   } catch { /* sem Supabase: segue sem selects */ }
 }
 
@@ -44,6 +49,7 @@ form.onsubmit = async (e) => {
   const body = {
     nome: f_nome.value, cargo: f_cargo.value || null, area: f_area.value || null,
     supervisor_id: f_sup.value || null, matricula: f_matricula.value || null,
+    empresa_id: f_emp.value || null,
     admissao: f_admissao.value || null, setor: f_setor.value || null,
     desligamento: f_deslig.value || null, jornada_id: f_jornada.value || null,
     em_treinamento: f_trein.checked,
