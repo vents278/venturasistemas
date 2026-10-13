@@ -67,3 +67,17 @@ def vincular_usuario(user_id: str, email: str, nome: str | None = None) -> dict:
         on_conflict="id",
     ).execute()
     return buscar_usuario(user_id) or {"id": user_id, "email": email, "perfil": "OPERADOR", "ativo": True}
+
+
+def trocar_senha(user_id: str, email: str, senha_atual: str, nova_senha: str) -> None:
+    """Paridade sistema antigo: confirma a senha atual (login) e troca via admin."""
+    from app.core.supabase_client import get_supabase
+
+    if len(nova_senha) < 6:
+        raise ValueError("Nova senha deve ter ao menos 6 caracteres")
+    sb_anon = _anon_client()
+    try:
+        sb_anon.auth.sign_in_with_password({"email": email, "password": senha_atual})
+    except Exception:
+        raise ValueError("Senha atual incorreta")
+    get_supabase().auth.admin.update_user_by_id(user_id, {"password": nova_senha})

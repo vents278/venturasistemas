@@ -42,6 +42,25 @@ def detalhar(func_id: str) -> dict:
     return row
 
 
+def ficha(func_id: str) -> dict:
+    """Paridade sistema antigo: dados + últimas 10 presenças com horas."""
+    from app.modules.apropriacoes import repository as ap_repo
+    from app.modules.presencas import repository as pr_repo
+
+    func = repo.get_repo(func_id)
+    if not func:
+        raise KeyError("Funcionário não encontrado")
+    pres = sorted(pr_repo.list_repo(None, None, func_id, None), key=lambda p: p.get("data", ""), reverse=True)[:10]
+    tots: dict = {}
+    if pres:
+        datas = sorted(p["data"] for p in pres)
+        for a in ap_repo.list_repo(None, datas[0], datas[-1], func_id, None):
+            tots[a["data"]] = round(tots.get(a["data"], 0) + float(a["horas"]), 2)
+    return {"info": func, "historico": [
+        {"data": p["data"], "situacao": p["status_codigo"], "horas": tots.get(p["data"], 0.0),
+         "observacao": p.get("obs") or ""} for p in pres]}
+
+
 def criar(body, usuario_id: str | None = None) -> dict:
     validar_datas(body.admissao, body.desligamento)
     payload = _payload(body)

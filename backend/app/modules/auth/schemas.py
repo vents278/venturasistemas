@@ -20,3 +20,8 @@ class LoginOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     usuario: UsuarioOut
+
+
+class TrocarSenhaIn(BaseModel):
+    senha_atual: str
+    nova_senha: str

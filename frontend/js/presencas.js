@@ -44,19 +44,60 @@ async function carregar() {
   if (sup.value) p.set("supervisor_id", sup.value);
   if (setor.value) p.set("setor", setor.value);
   GRADE = await api("/presencas/grade?" + p);
-  const dias = GRADE.dias;
-  gh.innerHTML = `<tr><th class="sticky">Funcionário</th>` + dias.map((d) => {
+  renderGrade();
+}
+
+function celTexto(c) {
+  if (!c || !c.status) return { cls: "cel vazia", txt: "+" };
+  const t = c.total || 0;
+  switch (c.status) {
+    case "PRESENTE": return c.extras > 0 ? { cls: "cel st-extra", txt: `${t}h*` } : t > 0 ? { cls: "cel PRESENTE", txt: `${t}h` } : { cls: "cel st-pendente", txt: "0h" };
+    case "DESLOCADO": return t > 0 ? { cls: "cel DESLOCADO", txt: `${t}h` } : { cls: "cel st-pendente", txt: "DES!" };
+    case "FALTA": return { cls: "cel FALTA", txt: "F" };
+    case "FOLGA": return { cls: "cel FOLGA", txt: "FOL" };
+    case "TREINAMENTO": return { cls: "cel TREINAMENTO", txt: "TRE" };
+    case "FERIAS": return { cls: "cel FERIAS", txt: "FER" };
+    case "AFASTADO": return { cls: "cel AFASTADO", txt: "AFA" };
+    default: return { cls: "cel FOLGA", txt: c.status.slice(0, 3) };
+  }
+}
+
+function renderGrade() {
+  const dias = GRADE.dias, filtro = document.getElementById("sit").value;
+  const match = (l) => {
+    if (!filtro) return true;
+    return dias.some((d) => {
+      const c = l.dias[d];
+      if (filtro === "COM_EXTRA") return c && (c.extras || 0) > 0;
+      if (filtro === "SEM_LANCAMENTO") return !c || !c.status;
+      return c && c.status === filtro;
+    });
+  };
+  gh.innerHTML = `<tr><th class="sticky">Funcionário</th><th>Cargo</th><th>Atuação</th>` + dias.map((d) => {
     const dt = new Date(d + "T12:00:00"), wk = dt.getDay() === 0 || dt.getDay() === 6;
     return `<th class="${wk ? "wknd" : ""}">${String(dt.getDate()).padStart(2, "0")}<br/>${DW[dt.getDay()]}</th>`;
   }).join("") + "</tr>";
-  gb.innerHTML = GRADE.linhas.map((l) => `<tr><td class="sticky"><strong>${l.funcionario.nome}</strong><br/><small style="color:var(--muted)">${l.funcionario.matricula || ""} · ${l.funcionario.setor || "-"}</small></td>` +
-    dias.map((d) => {
-      const c = l.dias[d];
-      const inner = c && c.status
-        ? `<div class="cel ${c.status}">${c.status.slice(0, 4)}<small>${c.total || ""}${c.total ? "h" : ""}</small></div>`
-        : `<div class="cel vazia">+</div>`;
-      return `<td><div onclick='abrirDia(${JSON.stringify(l.funcionario.id)},${JSON.stringify(d)})'>${inner}</div></td>`;
-    }).join("") + "</tr>").join("");
+  let area = "", html = "";
+  for (const l of GRADE.linhas.filter(match)) {
+    if (l.funcionario.area !== area) {
+      area = l.funcionario.area;
+      html += `<tr><td colspan="${dias.length + 3}" style="background:#f8fafc;font-weight:800;text-align:left">ÁREA: ${area}</td></tr>`;
+    }
+    const f = l.funcionario;
+    html += `<tr><td class="sticky"><strong class="flink" onclick='ficha(${JSON.stringify(f.id)})' style="cursor:pointer;color:var(--accent)">${f.nome}</strong><br/><small style="color:var(--muted)">${f.matricula || ""} · Sup: ${f.supervisor_nome || "-"}</small></td><td>${f.cargo || "-"}</td><td>${f.area}</td>` +
+      dias.map((d) => {
+        const v = celTexto(l.dias[d]);
+        return `<td><div class="${v.cls}" onclick='abrirDia(${JSON.stringify(f.id)},${JSON.stringify(d)})'>${v.txt}</div></td>`;
+      }).join("") + "</tr>";
+  }
+  gb.innerHTML = html || `<tr><td colspan="${dias.length + 3}">Nenhum funcionário no filtro.</td></tr>`;
+}
+
+async function ficha(id) {
+  const d = await api("/funcionarios/" + id + "/ficha");
+  fichaBody.innerHTML = `<p><b>${d.info.nome}</b> <small>${d.info.matricula || ""} · ${d.info.cargo || "-"} · ${d.info.area || "-"}</small></p>` +
+    (d.historico.map((h) => `<div>📅 ${h.data.split("-").reverse().join("/")}: <b>${h.situacao}</b> (${h.horas}h) ${h.observacao || ""}</div>`).join("") || "Sem lançamentos.");
+  document.getElementById("modalFicha").style.display = "block";
 }
 
 async function abrirDia(fid, data) {
@@ -156,4 +197,5 @@ async function gerarDia() {
 }
 
 mes.value = new Date().toISOString().slice(0, 7);
+document.getElementById("sit").onchange = () => GRADE && renderGrade();
 carregar();

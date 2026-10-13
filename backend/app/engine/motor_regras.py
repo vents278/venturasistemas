@@ -29,7 +29,7 @@ def avaliar(funcionario_id: str, data_ref: str) -> list:
     if presenca:
         st = pr_repo.get_status(presenca["status_codigo"])
         exige = bool(st and st.get("exige_apropriacao"))
-        a = avaliar_apropriacao(funcionario_id, data_ref, True, exige, carga, total)
+        a = avaliar_apropriacao(funcionario_id, data_ref, True, exige, carga, total, presenca["status_codigo"])
         if a:
             achados.append(a)
 

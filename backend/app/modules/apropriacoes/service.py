@@ -66,8 +66,26 @@ def _criar_linha(fid: str, data_str: str, os_id: str, horas: float, usuario_id=N
         raise ValueError(MSG_DUPLICADA)
     row = repo.create_repo({"funcionario_id": fid, "data": data_str, "os_id": os_id, "horas": horas})
     distribuir(fid, data_str)
+    _garantir_presenca(fid, data_str, os_id)
     audit(usuario_id, "apropriacoes", row.get("id"), "criar", None, row)
     return repo.get_repo(row.get("id")) or row
+
+
+def _garantir_presenca(fid: str, data_str: str, os_id: str) -> None:
+    """Paridade sistema antigo: lançar OS marca PRESENTE e anota 'OS: <codigo>' na obs."""
+    from app.modules.ordens_servico import repository as os_repo
+    from app.modules.presencas import repository as pr_repo
+
+    try:
+        os_row = os_repo.get_repo(os_id) or {}
+        tag = f"OS: {os_row.get('codigo', os_id)}"
+        atual = pr_repo.list_repo(data_str, None, None, fid, None)
+        if not atual:
+            pr_repo.upsert_repo({"funcionario_id": fid, "data": data_str, "status_codigo": "PRESENTE", "obs": tag})
+        elif tag not in (atual[0].get("obs") or ""):
+            pr_repo.update_repo(atual[0]["id"], {"obs": ((atual[0].get("obs") or "") + " | " + tag).strip(" |")})
+    except Exception:
+        pass  # presença é acessória aqui; nunca trava a apropriação
 
 
 def registrar(body, usuario_id: str | None = None) -> dict:

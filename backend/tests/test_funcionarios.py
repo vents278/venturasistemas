@@ -45,6 +45,21 @@ def test_ativar_limpa_treinamento(monkeypatch):
     assert seen["p"]["em_treinamento"] is False
 
 
+def test_ficha(admin_client, monkeypatch):
+    from app.modules.apropriacoes import repository as ap_repo
+    from app.modules.funcionarios import repository as repo
+    from app.modules.presencas import repository as pr_repo
+
+    monkeypatch.setattr(repo, "get_repo", lambda fid: {"id": fid, "nome": "Joao", "matricula": "M1"})
+    monkeypatch.setattr(pr_repo, "list_repo", lambda *a, **k: [
+        {"data": "2026-10-08", "status_codigo": "PRESENTE", "obs": ""}])
+    monkeypatch.setattr(ap_repo, "list_repo", lambda *a, **k: [
+        {"data": "2026-10-08", "horas": 9.0}])
+    r = admin_client.get("/funcionarios/F1/ficha")
+    assert r.status_code == 200, r.text
+    assert r.json()["historico"][0]["horas"] == 9.0
+
+
 def test_desligamento_antes_admissao():
     with pytest.raises(ValueError):
         service.validar_datas(date(2026, 5, 1), date(2026, 4, 1))

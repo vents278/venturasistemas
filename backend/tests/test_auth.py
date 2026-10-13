@@ -2,6 +2,7 @@
 
 import uuid
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -29,3 +30,10 @@ def test_me_com_token_valido():
 def test_me_sem_token_403():
     r = client.get("/auth/me")
     assert r.status_code in (401, 403)
+
+
+def test_trocar_senha_curta_rejeita():
+    from app.modules.auth import service as auth_service
+
+    with pytest.raises(ValueError):
+        auth_service.trocar_senha("U1", "a@a.com", "qualquer", "123")

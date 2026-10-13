@@ -160,14 +160,23 @@ def montar_grade(de: str, ate: str, setor: str | None = None, q: str | None = No
         cel["total"] = round(cel["total"] + float(a["horas"]), 2)
         cel["normais"] = round(cel["normais"] + n, 2)
         cel["extras"] = round(cel["extras"] + e, 2)
-    linhas = [{"funcionario": nomes[fid], "dias": por_func[fid]} for fid in sorted(nomes, key=lambda f: nomes[f]["nome"])]
+    linhas = [{"funcionario": nomes[fid], "dias": por_func[fid]} for fid in sorted(nomes, key=lambda f: ((nomes[f].get("area") or ""), nomes[f]["nome"]))]
     return {"de": de, "ate": ate, "dias": dias, "linhas": linhas}
 
 
 def _base_funcionarios(fn_repo, q, area, setor, supervisor_id) -> dict:
     """Base = ativos (com filtros) + quem tem lançamento no período."""
+    from app.core.supabase_client import get_supabase
+
+    base = fn_repo.list_ativos_full()
+    sup_ids = {str(r["supervisor_id"]) for r in base if r.get("supervisor_id")}
+    nomes_sup: dict = {}
+    if sup_ids:
+        sb = get_supabase()
+        for r in sb.table("funcionarios").select("id,nome").in_("id", sorted(sup_ids)).execute().data or []:
+            nomes_sup[str(r["id"])] = r.get("nome")
     out = {}
-    for r in fn_repo.list_ativos_full():
+    for r in base:
         if setor and r.get("setor") != setor:
             continue
         if area and (r.get("area") or "") != area:
@@ -177,8 +186,9 @@ def _base_funcionarios(fn_repo, q, area, setor, supervisor_id) -> dict:
         if q and q.lower() not in f"{r.get('nome', '')} {r.get('matricula', '')}".lower():
             continue
         out[r["id"]] = {"id": r["id"], "matricula": r.get("matricula"), "nome": r.get("nome"),
-                        "setor": r.get("setor"), "area": r.get("area"),
+                        "cargo": r.get("cargo"), "setor": r.get("setor"), "area": r.get("area") or "Sem área",
                         "supervisor_id": str(r["supervisor_id"]) if r.get("supervisor_id") else None,
+                        "supervisor_nome": nomes_sup.get(str(r["supervisor_id"] or "")),
                         "jornada_id": str(r["jornada_id"]) if r.get("jornada_id") else None}
     return out
 

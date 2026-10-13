@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.modules.auth import service
 from app.modules.auth.dependencies import get_current_user, require_admin
-from app.modules.auth.schemas import LoginIn, LoginOut, UsuarioOut
+from app.modules.auth.schemas import LoginIn, LoginOut, TrocarSenhaIn, UsuarioOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -30,3 +30,12 @@ def me(user: dict = Depends(get_current_user)) -> UsuarioOut:
 @router.post("/vincular", response_model=UsuarioOut, dependencies=[Depends(require_admin)])
 def vincular(user_id: str, email: str, nome: str | None = None) -> UsuarioOut:
     return UsuarioOut(**service.vincular_usuario(user_id, email, nome))
+
+
+@router.post("/trocar-senha")
+def trocar_senha(body: TrocarSenhaIn, user: dict = Depends(get_current_user)):
+    try:
+        service.trocar_senha(user["id"], user["email"], body.senha_atual, body.nova_senha)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"mensagem": "Senha alterada com sucesso"}

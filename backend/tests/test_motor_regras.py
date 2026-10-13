@@ -38,6 +38,15 @@ def test_sem_carga_nao_cobra():
     assert avaliar_apropriacao("F", "2026-10-08", True, True, 0, 0) is None
 
 
+def test_deslocado_sem_os():
+    a = avaliar_apropriacao("F", "2026-10-10", True, True, 7.33, 0, "DESLOCADO")
+    assert a["tipo"] == "DESLOCADO_SEM_OS" and "Deslocado sem lançamento" in a["descricao"]
+
+
+def test_presente_sem_carga_sem_total_nao_cobra():
+    assert avaliar_apropriacao("F", "2026-10-11", True, True, 0, 0, "PRESENTE") is None
+
+
 def test_avaliar_dia_wiring(gestor_client, monkeypatch):
     from app.modules.presencas import repository as pr_repo
     from app.modules.apropriacoes import repository as ap_repo

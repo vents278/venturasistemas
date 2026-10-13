@@ -40,6 +40,14 @@ def listar(
     return {"items": [_to_out(r) for r in data["items"]], "total": data["total"], "page": page}
 
 
+@router.get("/{func_id}/ficha")
+def ficha(func_id: str, _: dict = Depends(get_current_user)):
+    try:
+        return service.ficha(func_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
 @router.get("/{func_id}", response_model=FuncionarioOut)
 def detalhar(func_id: str, _: dict = Depends(get_current_user)):
     try:

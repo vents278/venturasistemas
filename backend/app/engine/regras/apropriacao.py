@@ -16,11 +16,29 @@ def avaliar_apropriacao(
     exige_apropriacao: bool,
     carga: float,
     total: float,
+    status_codigo: str | None = None,
 ) -> dict | None:
     if not tem_presenca or not exige_apropriacao:
         return None
-    if (carga or 0) <= 0:
+    if (carga or 0) <= 0 and (total or 0) > 0:
         return None
+    if (total or 0) <= TOLERANCIA:
+        deslocado = (status_codigo or "").upper() == "DESLOCADO"
+        if not deslocado and (carga or 0) <= 0:
+            return None  # sem jornada prevista e nada feito: nada a cobrar
+        tipo = "DESLOCADO_SEM_OS" if deslocado else "SEM_APROPRIACAO"
+        desc = (f"Deslocado sem lançamento de OS ({data_ref})" if tipo == "DESLOCADO_SEM_OS"
+                else f"Sem apropriação: {carga}h previstas em {data_ref}")
+        return {
+            "tipo": tipo,
+            "funcionario_id": funcionario_id,
+            "data_ref": data_ref,
+            "descricao": desc,
+            "horas_faltantes": round(carga or 0, 2),
+            "carga_prevista": carga,
+            "total_apropriado": total,
+            "origem_regra": "motor_regras.apropriacao",
+        }
     faltantes = round(carga - (total or 0), 2)
     if faltantes <= TOLERANCIA:
         return None

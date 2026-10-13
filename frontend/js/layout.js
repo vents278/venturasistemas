@@ -33,7 +33,20 @@ function tokenEmail() {
   sb.innerHTML =
     '<div class="logo">ERP<small>Estação de Trabalho</small></div><nav>' +
     NAV.map(([h, l, i]) => `<a href="${h}" class="${h === page ? "active" : ""}"><span>${i}</span>${l}</a>`).join("") +
-    `</nav><div class="who">${tokenEmail() || "usuário"}<br/><button onclick="sessionStorage.removeItem('erp_token');location.href='login.html'">Sair</button></div>`;
+    `</nav><div class="who">${tokenEmail() || "usuário"}<br/><button onclick="trocarSenha()">🔑 Trocar senha</button><button onclick="sessionStorage.removeItem('erp_token');location.href='login.html'">Sair</button></div>`;
+
+async function trocarSenha() {
+  const atual = prompt("Senha atual:");
+  if (!atual) return;
+  const nova = prompt("Nova senha (mín. 6 caracteres):");
+  if (!nova) return;
+  if (nova !== prompt("Confirme a nova senha:")) return alert("Confirmação diferente.");
+  const t = sessionStorage.getItem("erp_token");
+  const r = await fetch(API_BASE + "/auth/trocar-senha", { method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + t },
+    body: JSON.stringify({ senha_atual: atual, nova_senha: nova }) });
+  alert(r.ok ? "Senha alterada." : await r.text());
+}
 
   const tb = document.getElementById("topbar");
   if (tb && !document.getElementById("hamburger")) {

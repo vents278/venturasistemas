@@ -8,11 +8,11 @@ from datetime import datetime, timezone
 
 from app.modules.pendencias import repository as pd_repo
 
-TIPOS_APROPRIACAO = {"APROPRIACAO_INCOMPLETA", "SEM_APROPRIACAO"}
+TIPOS_APROPRIACAO = {"APROPRIACAO_INCOMPLETA", "SEM_APROPRIACAO", "DESLOCADO_SEM_OS"}
 
 
 def _prioridade(achado: dict) -> str:
-    if achado["tipo"] == "SEM_APROPRIACAO":
+    if achado["tipo"] in ("SEM_APROPRIACAO", "DESLOCADO_SEM_OS"):
         return "ALTA"
     return "ALTA" if (achado.get("horas_faltantes") or 0) >= 4 else "MEDIA"
 

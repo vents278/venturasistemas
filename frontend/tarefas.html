@@ -22,10 +22,10 @@
       <button onclick="carregar()">Atualizar</button>
     </div>
     <div class="board">
-      <div class="col" id="c_A_FAZER"><h3>A Fazer</h3></div>
-      <div class="col" id="c_EM_ANDAMENTO"><h3>Em Andamento</h3></div>
-      <div class="col" id="c_AGUARDANDO"><h3>Aguardando</h3></div>
-      <div class="col" id="c_CONCLUIDO"><h3>Concluído</h3></div>
+      <div class="col" id="c_A_FAZER" ondragover="event.preventDefault()" ondrop="soltar(event,'A_FAZER')"><h3>A Fazer (<span id="n_A_FAZER">0</span>)</h3></div>
+      <div class="col" id="c_EM_ANDAMENTO" ondragover="event.preventDefault()" ondrop="soltar(event,'EM_ANDAMENTO')"><h3>Em Andamento (<span id="n_EM_ANDAMENTO">0</span>)</h3></div>
+      <div class="col" id="c_AGUARDANDO" ondragover="event.preventDefault()" ondrop="soltar(event,'AGUARDANDO')"><h3>Aguardando (<span id="n_AGUARDANDO">0</span>)</h3></div>
+      <div class="col" id="c_CONCLUIDO" ondragover="event.preventDefault()" ondrop="soltar(event,'CONCLUIDO')"><h3>Concluído (<span id="n_CONCLUIDO">0</span>)</h3></div>
     </div>
   </main>
   <script src="js/api.js"></script>
@@ -42,15 +42,24 @@
       if (!r.ok) throw new Error(await r.text());
       return r.status === 204 ? null : r.json();
     }
+    const NOME = { A_FAZER: "A Fazer", EM_ANDAMENTO: "Em Andamento", AGUARDANDO: "Aguardando", CONCLUIDO: "Concluído" };
     async function carregar() {
       const d = await api("/tarefas");
-      COLS.forEach((c) => { document.getElementById("c_" + c).innerHTML = "<h3>" + document.getElementById("c_" + c).querySelector("h3").textContent + "</h3>"; });
+      COLS.forEach((c) => {
+        document.getElementById("c_" + c).innerHTML = `<h3>${NOME[c]} (<span id="n_${c}">0</span>)</h3>`;
+      });
       d.forEach((t) => {
         const el = document.createElement("div"); el.className = "card";
+        el.draggable = true; el.ondragstart = (e) => e.dataTransfer.setData("text/plain", t.id);
         el.innerHTML = `<strong>${t.titulo}</strong> <small>[${t.prioridade}]</small><br/>` +
           COLS.map((c) => c !== t.status ? `<button onclick="mover('${t.id}','${c}')">${c}</button>` : "").join(" ");
         document.getElementById("c_" + t.status).appendChild(el);
+        document.getElementById("n_" + t.status).textContent = +document.getElementById("n_" + t.status).textContent + 1;
       });
+    }
+    async function soltar(e, status) {
+      e.preventDefault();
+      await mover(e.dataTransfer.getData("text/plain"), status);
     }
     async function criar() {
       if (!titulo.value.trim()) return;
