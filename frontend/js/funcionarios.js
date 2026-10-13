@@ -37,8 +37,19 @@ async function carregar() {
     <td>${f.matricula}</td><td>${f.nome}${f.em_treinamento ? ' <span class="MEDIA">TREIN</span>' : ""}</td>
     <td>${f.cargo || "-"}</td><td>${f.area || "-"}</td>
     <td><span class="badge ${f.ativo ? "on" : "off"}">${f.ativo ? "ativo" : "inativo"}</span></td>
-    <td>${f.ativo ? `<button onclick="inativar('${f.id}')">Inativar</button>` : ""}</td>
+    <td><button onclick="editar('${f.id}')">Editar</button> ${f.ativo ? `<button onclick="inativar('${f.id}')">Inativar</button>` : ""}</td>
   </tr>`).join("") || '<tr><td colspan="6">Nenhum registro</td></tr>';
+}
+
+async function editar(id) {
+  const f = await api("/funcionarios/" + id);
+  editId = id; mt.textContent = "Editar funcionário";
+  f_nome.value = f.nome || ""; f_cargo.value = f.cargo || ""; f_area.value = f.area || "";
+  f_matricula.value = f.matricula || ""; f_setor.value = f.setor || "";
+  f_admissao.value = f.admissao || ""; f_deslig.value = f.desligamento || "";
+  f_obs.value = f.observacoes || ""; f_trein.checked = !!f.em_treinamento;
+  f_sup.value = f.supervisor_id || ""; f_jornada.value = f.jornada_id || ""; f_emp.value = f.empresa_id || "";
+  modal.style.display = "block";
 }
 
 function abrirModal() { editId = null; mt.textContent = "Novo funcionário"; form.reset(); modal.style.display = "block"; }
@@ -55,7 +66,8 @@ form.onsubmit = async (e) => {
     em_treinamento: f_trein.checked,
     observacoes: f_obs.value || null,
   };
-  await api("/funcionarios", { method: "POST", body: JSON.stringify(body) });
+  await api(editId ? "/funcionarios/" + editId : "/funcionarios",
+    { method: editId ? "PATCH" : "POST", body: JSON.stringify(body) });
   fecharModal(); carregar();
 };
 
