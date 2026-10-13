@@ -60,7 +60,7 @@ app.include_router(dashboard_router, dependencies=[Depends(require_modulo("dashb
 app.include_router(relatorios_router, dependencies=[Depends(require_modulo("relatorios"))])
 app.include_router(auditoria_router, dependencies=[Depends(require_modulo("auditoria"))])
 app.include_router(ai_router, dependencies=[Depends(require_modulo("ai"))])
-app.include_router(empresas_router, dependencies=[Depends(require_modulo("empresas"))])
+app.include_router(empresas_router)
 app.include_router(usuarios_router, dependencies=[Depends(require_admin)])
 
 

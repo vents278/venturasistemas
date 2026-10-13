@@ -19,7 +19,11 @@
     (async () => {
       if (!sessionStorage.getItem("erp_token")) location.href = "login.html";
       try {
-        const emps = await Auth.me().then(() => fetch(API_BASE + "/empresas", { headers: { Authorization: "Bearer " + sessionStorage.getItem("erp_token") } }).then((r) => r.json()));
+        await Auth.me();
+        const r = await fetch(API_BASE + "/empresas", { headers: { Authorization: "Bearer " + sessionStorage.getItem("erp_token") } });
+        if (!r.ok) throw new Error("Sem acesso à lista de empresas (" + r.status + ")");
+        const emps = await r.json();
+        if (!Array.isArray(emps)) throw new Error("Resposta inesperada da API");
         lista.innerHTML = emps.map((e) => `<a class="card" href="#" onclick="sel('${e.id}');return false"><b>${e.nome}</b>${e.cnpj || ""}</a>`).join("") || "Nenhuma empresa.";
       } catch (e) { err.textContent = e.message; }
     })();
