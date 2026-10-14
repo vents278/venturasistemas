@@ -55,6 +55,41 @@ def test_status_preventiva_concluida_so_com_tudo_regularizado():
     assert service.status_preventiva({"status": "CANCELADA"}, [_linha()]) == "CANCELADA"
 
 
+def test_status_manual_tem_precedencia_sobre_calculo():
+    manual = {"status": "EM_ANDAMENTO", "status_manual": True}
+    assert service.status_preventiva(manual, [_linha()]) == "EM_ANDAMENTO"
+    automatico = {"status": "EM_ANDAMENTO", "status_manual": False}
+    assert service.status_preventiva(automatico, [_linha()]) == "CONCLUIDA"
+    cancelada = {"status": "CANCELADA", "status_manual": True}
+    assert service.status_preventiva(cancelada, [_linha()]) == "CANCELADA"
+
+
+def test_atualizar_define_e_limpa_status_manual(monkeypatch):
+    updates = []
+    monkeypatch.setattr(repo, "get_repo", lambda pid: {
+        "id": pid, "status": "PROGRAMADA", "status_manual": False, "data": "2026-10-15"})
+    monkeypatch.setattr(repo, "list_funcionarios", lambda pid: [])
+    monkeypatch.setattr(repo, "list_os", lambda pid: [])
+    monkeypatch.setattr(repo, "update_repo", lambda pid, p: updates.append(p) or {"id": pid})
+    monkeypatch.setattr(service, "montar_detalhe", lambda pid: {"ok": True})
+    monkeypatch.setattr(service, "audit", lambda *a, **k: None)
+
+    class Body:
+        def model_dump(self, exclude_unset=True):
+            return {"status": "CONCLUIDA"}
+
+    service.atualizar("P1", Body())
+    assert updates[0]["status"] == "CONCLUIDA" and updates[0]["status_manual"] is True
+
+    class BodyAuto:
+        def model_dump(self, exclude_unset=True):
+            return {"status": "AUTO"}
+
+    service.atualizar("P1", BodyAuto())
+    assert updates[1]["status_manual"] is False
+    assert updates[1]["status"] == "PROGRAMADA"  # derivado, sem funcionários presentes
+
+
 # ---------------- duplicidades ----------------
 def test_adicionar_funcionario_duplicado(monkeypatch):
     monkeypatch.setattr(repo, "get_repo", lambda pid: {"id": pid})

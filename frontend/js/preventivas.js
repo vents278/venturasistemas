@@ -87,7 +87,7 @@ async function carregarFuncionarios() {
 function abrirNova() {
   EDIT_ID = null;
   form.reset();
-  p_status.value = "PROGRAMADA";
+  p_status.value = "AUTO";
   p_data.value = new Date().toISOString().slice(0, 10);
   document.getElementById("modalTitle").textContent = "Nova preventiva";
   modal.style.display = "block";
@@ -100,7 +100,7 @@ function abrirEditar(id) {
   p_data.value = p.data || ""; p_area.value = p.area || ""; p_equip.value = p.equipamento || "";
   p_desc.value = p.descricao || ""; p_obs.value = p.observacoes || "";
   p_ini.value = (p.hora_inicio || "").slice(0, 5); p_fim.value = (p.hora_fim || "").slice(0, 5);
-  p_status.value = p.status || "PROGRAMADA"; p_resp.value = p.responsavel_id || "";
+  p_status.value = p.status_manual ? (p.status || "AUTO") : "AUTO"; p_resp.value = p.responsavel_id || "";
   document.getElementById("modalTitle").textContent = "Editar preventiva";
   modal.style.display = "block";
 }

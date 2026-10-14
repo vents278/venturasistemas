@@ -60,9 +60,8 @@ def status_funcionario(pf: dict, oss: list, data_prev: str, hoje: str) -> str:
     return SIT_PARCIAL
 
 
-def status_preventiva(prev: dict, linhas: list) -> str:
-    if prev.get("status") == "CANCELADA":
-        return "CANCELADA"
+def _derivar_status(linhas: list) -> str:
+    """Status calculado apenas dos dados (programação × presença × OS)."""
     presentes = [l for l in linhas if l["compareceu"]]
     if not presentes:
         return "PROGRAMADA"
@@ -82,6 +81,15 @@ def status_preventiva(prev: dict, linhas: list) -> str:
     if pendentes > 0:
         return "AGUARDANDO_OS"
     return "CONCLUIDA"
+
+
+def status_preventiva(prev: dict, linhas: list) -> str:
+    # CANCELADA é terminal; status manual do gestor tem precedência sobre o cálculo.
+    if prev.get("status") == "CANCELADA":
+        return "CANCELADA"
+    if prev.get("status_manual"):
+        return prev.get("status") or _derivar_status(linhas)
+    return _derivar_status(linhas)
 
 
 # --------------------------------------------------------------------------
@@ -175,6 +183,7 @@ def _resumo(prev: dict, linhas: list) -> dict:
         "equipamento": prev.get("equipamento"),
         "descricao": prev.get("descricao"),
         "status": prev.get("status_calc") or prev.get("status"),
+        "status_manual": bool(prev.get("status_manual")),
         "hora_inicio": prev.get("hora_inicio"),
         "hora_fim": prev.get("hora_fim"),
         "observacoes": prev.get("observacoes"),
@@ -262,7 +271,7 @@ def _validar_status(status: str | None) -> None:
 
 
 def criar(body, usuario_id: str | None = None, empresa_id: str | None = None) -> dict:
-    _validar_status(body.status)
+    status, status_manual = _resolver_status_inicial(body.status)
     if body.responsavel_id and not repo.get_funcionario(str(body.responsavel_id)):
         raise KeyError("Responsável não encontrado")
     payload = {
@@ -274,7 +283,8 @@ def criar(body, usuario_id: str | None = None, empresa_id: str | None = None) ->
         "hora_inicio": _t(body.hora_inicio),
         "hora_fim": _t(body.hora_fim),
         "observacoes": body.observacoes or None,
-        "status": (body.status or "PROGRAMADA").upper(),
+        "status": status,
+        "status_manual": status_manual,
         "empresa_id": str(body.empresa_id) if body.empresa_id else empresa_id,
         "created_by": usuario_id,
     }
@@ -283,14 +293,31 @@ def criar(body, usuario_id: str | None = None, empresa_id: str | None = None) ->
     return montar_detalhe(row["id"])
 
 
+def _resolver_status_inicial(status: str | None) -> tuple[str, bool]:
+    """'AUTO'/vazio => PROGRAMADA automática; caso contrário é fixado manualmente."""
+    st = (status or "").strip().upper()
+    if not st or st == "AUTO":
+        return "PROGRAMADA", False
+    _validar_status(st)
+    return st, st != "PROGRAMADA"
+
+
 def atualizar(pid: str, body, usuario_id: str | None = None) -> dict:
     atual = repo.get_repo(pid)
     if not atual:
         raise KeyError("Preventiva não encontrada")
     patch = body.model_dump(exclude_unset=True)
-    if patch.get("status"):
-        _validar_status(patch["status"])
-        patch["status"] = patch["status"].upper()
+    if "status" in patch:
+        st = (patch["status"] or "").strip().upper()
+        if not st or st == "AUTO":
+            # volta ao status automático e já persiste o cálculo atual
+            patch["status_manual"] = False
+            linhas = _montar_linhas(atual, repo.list_funcionarios(pid), repo.list_os(pid), _hoje())
+            patch["status"] = _derivar_status(linhas)
+        else:
+            _validar_status(st)
+            patch["status"] = st
+            patch["status_manual"] = True
     if patch.get("responsavel_id"):
         if not repo.get_funcionario(str(patch["responsavel_id"])):
             raise KeyError("Responsável não encontrado")
