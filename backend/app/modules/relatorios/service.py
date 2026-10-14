@@ -8,7 +8,8 @@ import csv
 from io import BytesIO, StringIO
 
 FORMATOS = {"csv", "xlsx", "pdf"}
-RECURSOS = {"funcionarios", "presencas", "apropriacoes", "horas-extras", "pendencias", "tarefas", "absenteismo", "emails"}
+RECURSOS = {"funcionarios", "presencas", "apropriacoes", "horas-extras", "pendencias", "tarefas", "absenteismo", "emails",
+            "preventivas-programacao", "preventivas-execucao", "preventivas-pendencias"}
 LIMITE_PDF = 500
 
 
@@ -90,7 +91,84 @@ def coletar(recurso: str, f: dict) -> tuple[list, list]:
         rows = r.list_repo(f.get("status"), f.get("de"), f.get("ate"))
         cols = ["assunto", "destinatario", "status", "enviado_em", "erro"]
         return cols, [[x.get(c) for c in cols] for x in rows]
+    if recurso.startswith("preventivas-"):
+        return _coletar_preventivas(recurso, f)
     raise KeyError(f"Recurso inválido: {recurso}")
+
+
+def _coletar_preventivas(recurso: str, f: dict) -> tuple[list, list]:
+    from app.modules.preventivas import service as pv
+
+    itens = pv.listar(
+        data=f.get("data"), de=f.get("de"), ate=f.get("ate"), area=f.get("area"),
+        status=f.get("status"), funcionario_id=f.get("funcionario_id"),
+        cargo=f.get("cargo"), os_codigo=f.get("os_codigo"), situacao=f.get("situacao"))
+    detalhes = [pv.montar_detalhe(i["id"]) for i in itens]
+    usuarios = _usuarios_nomes()
+    if recurso == "preventivas-programacao":
+        cols = ["Data", "Area", "Equipamento", "Preventiva", "Funcionario", "Matricula",
+                "Cargo", "Escala", "Prev. inicio", "Prev. fim", "Responsavel", "Situacao"]
+        rows = []
+        for d in detalhes:
+            p = d["preventiva"]
+            for l in d["funcionarios"]:
+                fn = l["funcionario"]
+                rows.append([p.get("data"), p.get("area"), p.get("equipamento"), p.get("descricao"),
+                             fn.get("nome"), fn.get("matricula"), fn.get("cargo"), fn.get("escala"),
+                             l.get("hora_prev_inicio"), l.get("hora_prev_fim"),
+                             p.get("responsavel_nome") or "", l.get("status")])
+        return cols, rows
+    if recurso == "preventivas-execucao":
+        cols = ["Data", "Area", "Preventiva", "Funcionario", "Matricula", "Compareceu",
+                "Efet. inicio", "Efet. fim", "OS", "Descricao OS", "Horas", "Recebida",
+                "Data receb.", "Recebido por"]
+        rows = []
+        for d in detalhes:
+            p = d["preventiva"]
+            for l in d["funcionarios"]:
+                if not l["compareceu"]:
+                    continue
+                fn = l["funcionario"]
+                if l["os"]:
+                    for o in l["os"]:
+                        rows.append([p.get("data"), p.get("area"), p.get("descricao"),
+                                     fn.get("nome"), fn.get("matricula"), "Sim",
+                                     l.get("hora_efet_inicio"), l.get("hora_efet_fim"),
+                                     o.get("os_codigo"), o.get("descricao"), o.get("horas"),
+                                     "Sim" if o.get("recebida") else "Nao", o.get("data_recebimento"),
+                                     usuarios.get(str(o.get("recebido_por")), "")])
+                else:
+                    rows.append([p.get("data"), p.get("area"), p.get("descricao"),
+                                 fn.get("nome"), fn.get("matricula"), "Sim",
+                                 l.get("hora_efet_inicio"), l.get("hora_efet_fim"),
+                                 "-", "-", 0, "-", "-", ""])
+        return cols, rows
+    # preventivas-pendencias
+    cols = ["Data", "Area", "Funcionario", "Matricula", "OS pendente",
+            "OS recebidas", "OS pendentes", "Situacao"]
+    rows = []
+    for d in detalhes:
+        p = d["preventiva"]
+        for l in d["funcionarios"]:
+            if l["status"] not in ("AGUARDANDO_OS", "OS_PENDENTE", "PARCIALMENTE_REGULARIZADO", "NAO_COMPARECEU"):
+                continue
+            fn = l["funcionario"]
+            pendentes = [o.get("os_codigo") for o in l["os"] if not o.get("recebida")]
+            rows.append([p.get("data"), p.get("area"), fn.get("nome"), fn.get("matricula"),
+                         ", ".join([str(x) for x in pendentes]) or "-",
+                         l["os_recebidas"], l["os_pendentes"], l["status"]])
+    return cols, rows
+
+
+def _usuarios_nomes() -> dict:
+    from app.core.supabase_client import get_supabase
+
+    try:
+        sb = get_supabase()
+        r = sb.table("usuarios").select("id,nome").execute()
+        return {str(x["id"]): x.get("nome") for x in (r.data or [])}
+    except Exception:
+        return {}
 
 
 def render_csv(cols: list, rows: list) -> tuple[bytes, str]:

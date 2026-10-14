@@ -35,6 +35,17 @@ def find_aberta(tipo: str, funcionario_id: str, data_ref: str):
     return r.data[0] if r.data else None
 
 
+def find_aberta_reg(tipo: str, funcionario_id: str, data_ref: str, registro_id: str):
+    sb = get_supabase()
+    r = (
+        sb.table("pendencias").select("*")
+        .eq("tipo", tipo).eq("funcionario_id", funcionario_id)
+        .eq("data_ref", data_ref).eq("registro_id", registro_id)
+        .eq("status", "ABERTA").limit(1).execute()
+    )
+    return r.data[0] if r.data else None
+
+
 def list_abertas_por_data(data_ref: str, tipos: list | None = None):
     sb = get_supabase()
     q = sb.table("pendencias").select("*").eq("data_ref", data_ref).eq("status", "ABERTA")

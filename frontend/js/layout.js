@@ -4,6 +4,7 @@ const NAV = [
   ["funcionarios.html", "Funcionários", "👥", "funcionarios"],
   ["jornadas.html", "Jornadas", "🕐", "jornadas"],
   ["presencas.html", "Presença", "✅", "presencas"],
+  ["preventivas.html", "Preventivas", "🛠️", "preventivas"],
   ["apropriacoes.html", "Apropriação", "🧾", "apropriacoes"],
   ["horas_extras.html", "Horas extras", "⏱️", "horas-extras"],
   ["pendencias.html", "Pendências", "⚠️", "pendencias"],

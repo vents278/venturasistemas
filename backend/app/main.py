@@ -22,6 +22,7 @@ from app.modules.motor.router import router as motor_router
 from app.modules.ordens_servico.router import router as os_router
 from app.modules.pendencias.router import router as pendencias_router
 from app.modules.presencas.router import router as presencas_router
+from app.modules.preventivas.router import router as preventivas_router
 from app.modules.relatorios.router import router as relatorios_router
 from app.modules.tarefas.router import router as tarefas_router
 from app.modules.usuarios.router import router as usuarios_router
@@ -47,6 +48,7 @@ app.include_router(auth_router)
 app.include_router(funcionarios_router, dependencies=[Depends(require_modulo("funcionarios"))])
 app.include_router(jornadas_router, dependencies=[Depends(require_modulo("jornadas"))])
 app.include_router(presencas_router, dependencies=[Depends(require_modulo("presencas"))])
+app.include_router(preventivas_router, dependencies=[Depends(require_modulo("preventivas"))])
 app.include_router(os_router, dependencies=[Depends(require_modulo("apropriacoes"))])
 app.include_router(apropriacoes_router, dependencies=[Depends(require_modulo("apropriacoes"))])
 app.include_router(motor_router, dependencies=[Depends(require_modulo("motor"))])

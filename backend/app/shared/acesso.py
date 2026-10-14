@@ -6,7 +6,7 @@ Sem linhas em usuario_* : acesso total (compat); com linhas: restrito.
 
 MODULOS = ["dashboard", "funcionarios", "jornadas", "presencas", "apropriacoes",
            "horas-extras", "pendencias", "tarefas", "emails", "absenteismo",
-           "relatorios", "auditoria", "motor", "ai", "empresas", "usuarios"]
+           "preventivas", "relatorios", "auditoria", "motor", "ai", "empresas", "usuarios"]
 
 
 def acessos_usuario(sb, user_id: str) -> dict:

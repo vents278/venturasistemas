@@ -41,7 +41,7 @@
   <script src="js/layout.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    const MODULOS = ["dashboard","funcionarios","jornadas","presencas","apropriacoes","horas-extras","pendencias","tarefas","emails","absenteismo","relatorios","auditoria","motor","ai","empresas","usuarios"];
+    const MODULOS = ["dashboard","funcionarios","jornadas","presencas","preventivas","apropriacoes","horas-extras","pendencias","tarefas","emails","absenteismo","relatorios","auditoria","motor","ai","empresas","usuarios"];
     let EMPS = [], EDIT = null;
     async function api(path, opts = {}) {
       const h = { "Content-Type": "application/json", ...(opts.headers || {}) };

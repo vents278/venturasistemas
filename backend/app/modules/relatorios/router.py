@@ -20,13 +20,18 @@ def baixar(
     status: str | None = None,
     tipo: str | None = None,
     setor: str | None = None,
+    area: str | None = None,
+    os_codigo: str | None = None,
+    situacao: str | None = None,
+    cargo: str | None = None,
     q: str | None = Query(default=None),
     ativo: bool | None = None,
     _: dict = Depends(get_current_user),
 ):
     filtros = {"data": data, "de": de, "ate": ate, "funcionario_id": funcionario_id,
                "responsavel_id": responsavel_id, "status": status, "tipo": tipo,
-               "setor": setor, "q": q, "ativo": ativo}
+               "setor": setor, "area": area, "os_codigo": os_codigo, "situacao": situacao,
+               "cargo": cargo, "q": q, "ativo": ativo}
     filtros = {k: v for k, v in filtros.items() if v is not None}
     try:
         data_bytes, mime, nome = service.gerar(recurso, formato, filtros)
