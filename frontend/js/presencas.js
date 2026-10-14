@@ -1,6 +1,12 @@
 /* Grade de presença — célula clicável resolve o dia (presença + obs + ordens). */
 let STATUS = [], OSS = [], JORNADAS = [], GRADE = null, CEL = null;
+let T_GRADE = null, REQ = 0;
 const DW = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+function debounceGrade() {
+  clearTimeout(T_GRADE);
+  T_GRADE = setTimeout(carregar, 350);
+}
 
 async function api(path, opts = {}) {
   const h = { "Content-Type": "application/json", ...(opts.headers || {}) };
@@ -39,11 +45,14 @@ async function carregar() {
   }
   const { de, ate } = mesRange();
   const p = new URLSearchParams({ de, ate });
-  if (q.value) p.set("q", q.value);
-  if (area.value) p.set("area", area.value);
+  if (q.value.trim()) p.set("q", q.value.trim());
+  if (area.value.trim()) p.set("area", area.value.trim());
   if (sup.value) p.set("supervisor_id", sup.value);
-  if (setor.value) p.set("setor", setor.value);
-  GRADE = await api("/presencas/grade?" + p);
+  if (setor.value.trim()) p.set("setor", setor.value.trim());
+  const seq = ++REQ;
+  const g = await api("/presencas/grade?" + p);
+  if (seq !== REQ) return;
+  GRADE = g;
   renderGrade();
 }
 

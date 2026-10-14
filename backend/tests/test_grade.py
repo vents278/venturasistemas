@@ -33,6 +33,30 @@ def test_grade_agrupa(monkeypatch):
     assert cel["total"] == 5.0 and cel["apropriacoes"][0]["os_codigo"] == "OS1"
 
 
+def test_grade_busca_ignora_acento_e_multitermo(monkeypatch):
+    from app.modules.apropriacoes import repository as ap_repo
+    from app.modules.funcionarios import repository as fn_repo
+    from app.modules.presencas import repository as pr_repo
+
+    monkeypatch.setattr(pr_repo, "list_repo", lambda *a, **k: [])
+    monkeypatch.setattr(ap_repo, "list_repo", lambda *a, **k: [])
+    monkeypatch.setattr(fn_repo, "list_ativos_full", lambda: [
+        {"id": "F1", "nome": "José da Silva", "matricula": "M1", "cargo": "Eletricista", "setor": "Manutenção", "area": None, "supervisor_id": None, "jornada_id": None},
+        {"id": "F2", "nome": "João Souza", "matricula": "M2", "cargo": "Operador", "setor": "Produção", "area": None, "supervisor_id": None, "jornada_id": None}])
+
+    g = service.montar_grade("2026-10-01", "2026-10-08", None, "jose")
+    assert [l["funcionario"]["id"] for l in g["linhas"]] == ["F1"]
+
+    g = service.montar_grade("2026-10-01", "2026-10-08", None, "joao souza")
+    assert [l["funcionario"]["id"] for l in g["linhas"]] == ["F2"]
+
+    g = service.montar_grade("2026-10-01", "2026-10-08", None, "eletricista")
+    assert [l["funcionario"]["id"] for l in g["linhas"]] == ["F1"]
+
+    g = service.montar_grade("2026-10-01", "2026-10-08", "manutencao")
+    assert [l["funcionario"]["id"] for l in g["linhas"]] == ["F1"]
+
+
 def test_grade_periodo_grande_400(user_client):
     r = user_client.get("/presencas/grade?de=2026-01-01&ate=2026-12-31")
     assert r.status_code == 400

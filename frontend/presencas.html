@@ -35,11 +35,11 @@
       <button onclick="mudarMes(-1)">◀</button>
       <input id="mes" type="month" />
       <button onclick="mudarMes(1)">▶</button>
-      <input id="q" placeholder="pesquisar nome..." />
-      <input id="area" placeholder="área..." />
-      <select id="sup"><option value="">supervisor: todos</option></select>
+      <input id="q" placeholder="pesquisar nome, matrícula ou cargo..." oninput="debounceGrade()" />
+      <input id="area" placeholder="área..." oninput="debounceGrade()" />
+      <select id="sup" onchange="carregar()"><option value="">supervisor: todos</option></select>
       <select id="sit"><option value="">situação: todas</option><option>PRESENTE</option><option>DESLOCADO</option><option>FALTA</option><option>FOLGA</option><option>FERIAS</option><option>AFASTADO</option><option>TREINAMENTO</option><option value="COM_EXTRA">COM EXTRA</option><option value="SEM_LANCAMENTO">SEM LANÇAMENTO</option></select>
-      <input id="setor" placeholder="setor..." />
+      <input id="setor" placeholder="setor..." oninput="debounceGrade()" />
       <button onclick="carregar()">Carregar</button>
       <input id="dia" type="date" />
       <button onclick="gerarDia()" title="Lança presença do dia (treinamento p/ quem está em treinamento, padrão p/ demais)">Gerar dia</button>

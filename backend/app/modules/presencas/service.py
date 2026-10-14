@@ -1,9 +1,17 @@
 """Regras de presença — ETAPA 7/17. Valida vínculo, status e snapshot da jornada."""
 
+import unicodedata
+
 from app.modules.presencas import repository as repo
 from app.shared.auditoria import audit
 
 EXIGE_VINCULO_ATIVO = {"PRESENTE", "DESLOCADO"}
+
+
+def _normalizar(txt) -> str:
+    """Minúsculo e sem acentos — busca por nome tolera 'José'/'jose', 'João'/'joao'."""
+    base = unicodedata.normalize("NFKD", str(txt or ""))
+    return "".join(c for c in base if not unicodedata.combining(c)).lower().strip()
 
 
 def _validar(func: dict, data_str: str, status: str) -> None:
@@ -178,18 +186,23 @@ def _base_funcionarios(fn_repo, q, area, setor, supervisor_id, empresa_id=None) 
         sb = get_supabase()
         for r in sb.table("funcionarios").select("id,nome").in_("id", sorted(sup_ids)).execute().data or []:
             nomes_sup[str(r["id"])] = r.get("nome")
+    termos = _normalizar(q).split() if q else []
+    setor_n = _normalizar(setor) if setor else None
+    area_n = _normalizar(area) if area else None
     out = {}
     for r in base:
-        if setor and r.get("setor") != setor:
+        if setor_n and setor_n not in _normalizar(r.get("setor")):
             continue
-        if area and (r.get("area") or "") != area:
+        if area_n and area_n not in _normalizar(r.get("area")):
             continue
         if supervisor_id and str(r.get("supervisor_id") or "") != supervisor_id:
             continue
         if empresa_id and r.get("empresa_id") and str(r["empresa_id"]) != empresa_id:
             continue
-        if q and q.lower() not in f"{r.get('nome', '')} {r.get('matricula', '')}".lower():
-            continue
+        if termos:
+            alvo = _normalizar(f"{r.get('nome', '')} {r.get('matricula', '')} {r.get('cargo', '')}")
+            if not all(t in alvo for t in termos):
+                continue
         out[r["id"]] = {"id": r["id"], "matricula": r.get("matricula"), "nome": r.get("nome"),
                         "cargo": r.get("cargo"), "setor": r.get("setor"), "area": r.get("area") or "Sem área",
                         "supervisor_id": str(r["supervisor_id"]) if r.get("supervisor_id") else None,
