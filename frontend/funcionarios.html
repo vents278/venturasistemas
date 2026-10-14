@@ -22,9 +22,9 @@
   <main>
     <header id="topbar"><h1>Funcionários</h1><a href="index.html">← Início</a></header>
     <div class="filters">
-      <input id="q" placeholder="nome ou matrícula" />
-      <select id="ativo"><option value="">todos</option><option value="true">ativos</option><option value="false">inativos</option></select>
-      <input id="setor" placeholder="setor" />
+      <input id="q" placeholder="nome ou matrícula" oninput="debounceBusca()" />
+      <select id="ativo" onchange="carregar()"><option value="">todos</option><option value="true">ativos</option><option value="false">inativos</option></select>
+      <input id="setor" placeholder="setor" oninput="debounceBusca()" />
       <button onclick="carregar()">Filtrar</button>
       <button onclick="abrirModal()">+ Novo</button>
     </div>

@@ -28,6 +28,7 @@ def listar(
     ativo: bool | None = None,
     setor: str | None = None,
     area: str | None = None,
+    cargo: str | None = None,
     jornada_id: str | None = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -36,7 +37,7 @@ def listar(
 ):
     try:
         escopo = None if user.get("perfil") == "ADMIN" else (user.get("empresas") or None)
-        data = service.listar(q, ativo, setor, area, jornada_id, page, limit, empresa, escopo)
+        data = service.listar(q, ativo, setor, area, jornada_id, page, limit, empresa, escopo, cargo)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
     return {"items": [_to_out(r) for r in data["items"]], "total": data["total"], "page": page}

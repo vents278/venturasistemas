@@ -5,7 +5,7 @@ from app.core.supabase_client import get_supabase
 SELECT = "*, jornadas(codigo,nome)"
 
 
-def list_repo(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20, empresa_id=None, escopo=None):
+def list_repo(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20, empresa_id=None, escopo=None, cargo=None):
     sb = get_supabase()
     query = sb.table("funcionarios").select(SELECT, count="exact")
     if q:
@@ -16,6 +16,8 @@ def list_repo(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1
         query = query.eq("setor", setor)
     if area:
         query = query.eq("area", area)
+    if cargo:
+        query = query.ilike("cargo", f"%{cargo}%")
     if jornada_id:
         query = query.eq("jornada_id", jornada_id)
     if empresa_id:

@@ -31,8 +31,26 @@ def _gerar_matricula() -> str:
     raise ValueError("Não foi possível gerar matrícula única")
 
 
-def listar(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20, empresa_id=None, escopo=None):
-    return repo.list_repo(q, ativo, setor, area, jornada_id, page, limit, empresa_id, escopo)
+def _cargo_supervisor(cargo) -> bool:
+    return "supervisor" in (cargo or "").lower()
+
+
+def _validar_supervisor(supervisor_id, atual_id=None) -> None:
+    """Supervisor responsável precisa ter cargo de supervisão.
+
+    Ao editar, mantém vínculos legados inalterados (não revalida se não mudou).
+    """
+    if not supervisor_id or (atual_id is not None and str(supervisor_id) == str(atual_id)):
+        return
+    sup = repo.get_repo(str(supervisor_id))
+    if not sup:
+        raise KeyError("Supervisor não encontrado")
+    if not _cargo_supervisor(sup.get("cargo")):
+        raise ValueError("O supervisor responsável precisa ter cargo de supervisão")
+
+
+def listar(q=None, ativo=None, setor=None, area=None, jornada_id=None, page=1, limit=20, empresa_id=None, escopo=None, cargo=None):
+    return repo.list_repo(q, ativo, setor, area, jornada_id, page, limit, empresa_id, escopo, cargo)
 
 
 def detalhar(func_id: str) -> dict:
@@ -71,6 +89,7 @@ def criar(body, usuario_id: str | None = None) -> dict:
         payload["matricula"] = _gerar_matricula()
     if payload.get("supervisor_id") == "":
         payload.pop("supervisor_id", None)
+    _validar_supervisor(payload.get("supervisor_id"))
     try:
         depois = repo.create_repo(payload)
     except Exception as exc:
@@ -93,6 +112,7 @@ def atualizar(func_id: str, body, usuario_id: str | None = None) -> dict:
     )
     if patch.get("supervisor_id") == func_id:
         raise ValueError("Supervisor não pode ser o próprio funcionário")
+    _validar_supervisor(patch.get("supervisor_id"), atual.get("supervisor_id"))
     if patch.get("ativo") is True:
         patch["em_treinamento"] = False  # ativou → sai do treinamento automático
     depois = repo.update_repo(func_id, patch)
