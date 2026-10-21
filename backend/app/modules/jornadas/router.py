@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.modules.auth.dependencies import get_current_user, require_admin, require_gestor
+from app.modules.auth.dependencies import get_current_user, require_admin, require_gestor, require_modulo
 from app.modules.jornadas import service
 from app.modules.jornadas.schemas import HorarioIn, HorarioUpdate, JornadaIn, JornadaUpdate
 
@@ -26,7 +26,7 @@ def detalhar(jid: str, com_horarios: bool = False, _: dict = Depends(get_current
 
 
 @router.post("", status_code=201)
-def criar(body: JornadaIn, _: dict = Depends(require_gestor)):
+def criar(body: JornadaIn, _: dict = Depends(require_gestor), __: dict = Depends(require_modulo("jornadas"))):
     try:
         return service.criar(body)
     except ValueError as exc:
@@ -34,7 +34,7 @@ def criar(body: JornadaIn, _: dict = Depends(require_gestor)):
 
 
 @router.patch("/{jid}")
-def atualizar(jid: str, body: JornadaUpdate, user: dict = Depends(require_gestor)):
+def atualizar(jid: str, body: JornadaUpdate, user: dict = Depends(require_gestor), __: dict = Depends(require_modulo("jornadas"))):
     try:
         return service.atualizar(jid, body, user.get("id"))
     except KeyError as exc:
@@ -42,7 +42,7 @@ def atualizar(jid: str, body: JornadaUpdate, user: dict = Depends(require_gestor
 
 
 @router.delete("/{jid}", status_code=204)
-def excluir(jid: str, user: dict = Depends(require_admin)):
+def excluir(jid: str, user: dict = Depends(require_admin), __: dict = Depends(require_modulo("jornadas"))):
     try:
         service.excluir(jid, user.get("id"))
     except KeyError as exc:
@@ -63,7 +63,7 @@ def listar_horarios(jid: str, _: dict = Depends(get_current_user)):
 
 
 @router.post("/{jid}/horarios", status_code=201)
-def criar_horario(jid: str, body: HorarioIn, _: dict = Depends(require_gestor)):
+def criar_horario(jid: str, body: HorarioIn, _: dict = Depends(require_gestor), __: dict = Depends(require_modulo("jornadas"))):
     try:
         return service.criar_horario(jid, body)
     except KeyError as exc:
@@ -73,7 +73,7 @@ def criar_horario(jid: str, body: HorarioIn, _: dict = Depends(require_gestor)):
 
 
 @router.patch("/horarios/{hid}")
-def atualizar_horario(hid: str, body: HorarioUpdate, user: dict = Depends(require_gestor)):
+def atualizar_horario(hid: str, body: HorarioUpdate, user: dict = Depends(require_gestor), __: dict = Depends(require_modulo("jornadas"))):
     try:
         return service.atualizar_horario(hid, body, user.get("id"))
     except KeyError as exc:
@@ -83,7 +83,7 @@ def atualizar_horario(hid: str, body: HorarioUpdate, user: dict = Depends(requir
 
 
 @router.delete("/horarios/{hid}", status_code=204)
-def excluir_horario(hid: str, user: dict = Depends(require_gestor)):
+def excluir_horario(hid: str, user: dict = Depends(require_gestor), __: dict = Depends(require_modulo("jornadas"))):
     try:
         service.excluir_horario(hid, user.get("id"))
     except KeyError as exc:

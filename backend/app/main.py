@@ -46,7 +46,9 @@ from app.modules.auth.dependencies import require_admin, require_modulo
 
 app.include_router(auth_router)
 app.include_router(funcionarios_router, dependencies=[Depends(require_modulo("funcionarios"))])
-app.include_router(jornadas_router, dependencies=[Depends(require_modulo("jornadas"))])
+# Jornadas: leitura (GET) liberada a qualquer autenticado (usada pela grade de presença);
+# exigência do módulo "jornadas" mantida apenas na escrita (router do módulo).
+app.include_router(jornadas_router)
 app.include_router(presencas_router, dependencies=[Depends(require_modulo("presencas"))])
 app.include_router(preventivas_router, dependencies=[Depends(require_modulo("preventivas"))])
 app.include_router(os_router, dependencies=[Depends(require_modulo("apropriacoes"))])

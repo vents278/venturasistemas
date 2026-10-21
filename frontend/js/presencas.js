@@ -34,14 +34,21 @@ function mudarMes(d) {
 async function carregar() {
   if (!STATUS.length) STATUS = await api("/presencas/status-presenca");
   if (!OSS.length) {
-    OSS = await api("/os");
-    JORNADAS = await api("/jornadas");
-    const FUNC = await api("/funcionarios?ativo=true&limit=100");
-    const supIds = [...new Set(FUNC.items.map((f) => f.supervisor_id).filter(Boolean))];
-    sup.innerHTML = '<option value="">supervisor: todos</option>' + supIds.map((id) => {
-      const s = FUNC.items.find((f) => f.id === id);
-      return `<option value="${id}">${s ? s.nome : id}</option>`;
-    }).join("");
+    // Dados de apoio (combos do modal). Carregados de forma independente:
+    // uma falha em qualquer um não pode impedir a grade de ser exibida.
+    const [rOS, rJORN, rFUNC] = await Promise.allSettled([
+      api("/os"), api("/jornadas"), api("/funcionarios?ativo=true&limit=100"),
+    ]);
+    OSS = rOS.status === "fulfilled" ? rOS.value : [];
+    JORNADAS = rJORN.status === "fulfilled" ? rJORN.value : [];
+    if (rFUNC.status === "fulfilled") {
+      const FUNC = rFUNC.value;
+      const supIds = [...new Set(FUNC.items.map((f) => f.supervisor_id).filter(Boolean))];
+      sup.innerHTML = '<option value="">supervisor: todos</option>' + supIds.map((id) => {
+        const s = FUNC.items.find((f) => f.id === id);
+        return `<option value="${id}">${s ? s.nome : id}</option>`;
+      }).join("");
+    }
   }
   const { de, ate } = mesRange();
   const p = new URLSearchParams({ de, ate });
